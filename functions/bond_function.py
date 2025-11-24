@@ -21,21 +21,18 @@ class Bond:
         return price
     
     def cash_flows(self):
-        """Retourne une liste des cash flows et des temps (en années)"""
         coupon = self.nominal * self.coupon_rate / self.frequency
         n_periods = int(self.maturity * self.frequency)
         times = np.arange(1/self.frequency, self.maturity + 1/self.frequency, 1/self.frequency)
         flows = [coupon] * n_periods
-        flows[-1] += self.nominal  # ajout du nominal au dernier flux
+        flows[-1] += self.nominal
         return times, flows
     
     def plot_value_evolution(self):
-        """Trace l'évolution de la valeur actualisée de l'obligation dans le temps"""
         times, flows = self.cash_flows()
         remaining_value = []
         
         for t in times:
-            # actualisation des cash flows restant à chaque date
             idx = times >= t
             value = sum([f / (1 + self.rate / self.frequency) ** ((time - t) * self.frequency)
                          for f, time in zip(np.array(flows)[idx], times[idx])])
@@ -43,8 +40,8 @@ class Bond:
         
         plt.figure(figsize=(8,5))
         plt.plot(times, remaining_value, marker='o')
-        plt.xlabel('Temps (années)')
-        plt.ylabel('Valeur actualisée des cash flows restants')
-        plt.title('Évolution de la valeur de l\'obligation')
+        plt.xlabel('Time (years)')
+        plt.ylabel('Present value of remaining cash flows')
+        plt.title('Evolution of the bond value')
         plt.grid(True)
         plt.show()
