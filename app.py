@@ -1,26 +1,20 @@
 import streamlit as st
 
-st.title("Application Streamlit avec Onglets")
+# Import des pages
+from pages import accueil, pricing, greeks
+
+st.set_page_config(page_title="Asset Pricing App", layout="wide")
+
+st.title("Asset Pricing & Option Greeks")
 
 # Création des onglets
-tabs = st.tabs(["Accueil", "Pricing", "Greeks", "Plots", "Market Data"])
+tabs = st.tabs(["Accueil", "Pricing", "Greeks"])
 
 with tabs[0]:
-    st.header("Accueil")
-    st.write("Contenu de l'onglet Accueil")
+    accueil.app()
 
 with tabs[1]:
-    st.header("Pricing")
-    st.write("Contenu de l'onglet Pricing")
+    pricing.app()
 
 with tabs[2]:
-    st.header("Greeks")
-    st.write("Contenu de l'onglet Greeks")
-
-with tabs[3]:
-    st.header("Plots")
-    st.write("Contenu de l'onglet Plots")
-
-with tabs[4]:
-    st.header("Market Data")
-    st.write("Contenu de l'onglet Market Data")
+    greeks.app()
