@@ -1,20 +1,17 @@
 import streamlit as st
-
-# Import des pages
-from pages import accueil, pricing, greeks
+from pages import accueil, data , greeks, pricing
 
 st.set_page_config(page_title="Asset Pricing App", layout="wide")
-
 st.title("Asset Pricing & Option Greeks")
 
-# Création des onglets
-tabs = st.tabs(["Accueil", "Pricing", "Greeks"])
+tabs = st.tabs(["Accueil", "Data", "Pricing", "Greeks"])
 
 with tabs[0]:
-    accueil.app()
-
+    accueil.app()  
 with tabs[1]:
-    pricing.app()
-
+    data.app()
 with tabs[2]:
     greeks.app()
+with tabs[3]:
+    pricing.app()
+
