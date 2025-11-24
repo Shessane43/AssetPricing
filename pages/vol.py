@@ -9,15 +9,6 @@ def bs_vega(S, K, T, r, sigma, q=0.0):
     d1 = (np.log(S/K) + (r - q + 0.5*sigma**2)*T) / (sigma*np.sqrt(T))
     return S * np.exp(-q*T) * norm.pdf(d1) * np.sqrt(T)
 
-# --- BS price ---
-def bs_price(S, K, T, r, sigma, q=0.0, option_type="Call"):
-    d1 = (np.log(S/K) + (r - q + 0.5*sigma**2)*T) / (sigma*np.sqrt(T))
-    d2 = d1 - sigma*np.sqrt(T)
-    if option_type == "Call":
-        return S*np.exp(-q*T)*norm.cdf(d1) - K*np.exp(-r*T)*norm.cdf(d2)
-    else:
-        return K*np.exp(-r*T)*norm.cdf(-d2) - S*np.exp(-q*T)*norm.cdf(-d1)
-
 # --- Implied vol via Newton-Raphson ---
 def implied_vol(C_market,price_BS, S, K, T, r, q):
     sigma = 0.2
