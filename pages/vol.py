@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from functions.vol_function import VolFunction
 
-def vol():
+def app():
     st.header("Volatility Smile")
 
     required = ["S", "T", "r", "q", "option_type", "C_market", "C_BS"]
