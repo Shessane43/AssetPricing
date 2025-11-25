@@ -13,7 +13,7 @@ with tabs[1]:
 with tabs[2]:
     vol.app()
 with tabs[3]:
-    greeks.app()
-with tabs[4]:
     pricing.app()
+with tabs[4]:
+    greeks.app()
 
