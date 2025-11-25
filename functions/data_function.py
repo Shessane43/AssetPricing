@@ -55,14 +55,14 @@ def show_data_page():
     ticker = st.session_state.ticker
     st.subheader(f"Données pour {ticker}")
 
-    # ✅ stocke la période sélectionnée
+    #stocke la période sélectionnée
     st.session_state.period = st.selectbox(
         "Période des données",
         ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "max"],
         index=3
     )
 
-    # ✅ si pas déjà téléchargées ou si période a changé → téléchargement
+    # si pas déjà téléchargées ou si période a changé, on télécharge
     if ("market_data" not in st.session_state 
         or st.session_state.market_data is None 
         or st.session_state.market_data_period != st.session_state.period):
