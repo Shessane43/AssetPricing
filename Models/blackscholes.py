@@ -160,7 +160,6 @@ class BlackScholes(Model):
         plt.plot(r_rho, rho_values, label="Rho")
 
         plt.title("Greeks")
-        plt.xlabel("Variable with respect to which we differentiate")
         plt.ylabel("Greeks")
         plt.grid(True)
         plt.legend()
