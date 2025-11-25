@@ -5,29 +5,16 @@ from scipy.optimize import minimize
 from Models.models import Model
 from Models.blackscholes import BlackScholes
 
-
 class HestonModel(Model):
-    """
-    Modèle de Heston :
-    - Pricing vanille via formule fermée (Lewis + Gauss-Laguerre)
-    - Pricing exotique via Monte Carlo
-    - Vol implicite via Newton-Raphson
-    - Calibration multi-strike via Nelder-Mead
-    """
-
-    def __init__(self, params, v0, kappa, theta, sigma_v, rho):
-        # Paramètres de la classe parent Model
-        super().__init__(
-            S=params.S,
-            K=params.K,
-            r=params.r,
-            T=params.T,
-            option_type=params.option_type,
-            position=params.position,
-            option_class=params.option_class,
-        )
-
-        # Paramètres spécifiques au modèle de Heston
+    def __init__(self, S, K, r, T, q, option_type, buy_sell, option_class, v0, kappa, theta, sigma_v, rho):
+        self.S = S
+        self.K = K
+        self.r = r
+        self.T = T
+        self.q = q
+        self.option_type = option_type.lower()
+        self.buy_sell = buy_sell.lower()
+        self.option_class = option_class.lower()
         self.v0 = v0
         self.kappa = kappa
         self.theta = theta
@@ -35,37 +22,24 @@ class HestonModel(Model):
         self.rho = rho
 
     def char_func(self, u):
+        r_adj = self.r - self.q
         a = self.kappa * self.theta
         b = self.kappa
         sigma = self.sigma_v
-
-        d = np.sqrt((self.rho * sigma * 1j * u - b) ** 2 + sigma ** 2 * (1j * u + u ** 2))
+        d = np.sqrt((self.rho * sigma * 1j * u - b)**2 + sigma**2 * (1j*u + u**2))
         g = (b - self.rho * sigma * 1j * u - d) / (b - self.rho * sigma * 1j * u + d)
-
-        C = self.r * 1j * u * self.T + (a / sigma ** 2) * (
-            (b - self.rho * sigma * 1j * u - d) * self.T -
-            2 * np.log((1 - g * np.exp(-d * self.T)) / (1 - g))
-        )
-        D = (b - self.rho * sigma * 1j * u - d) * (1 - np.exp(-d * self.T)) / (
-            sigma ** 2 * (1 - g * np.exp(-d * self.T))
-        )
-
-        return np.exp(C + D * self.v0 + 1j * u * np.log(self.S))
+        C = r_adj * 1j * u * self.T + (a/sigma**2) * ((b - self.rho * sigma * 1j * u - d)*self.T - 2*np.log((1 - g*np.exp(-d*self.T))/(1 - g)))
+        D = (b - self.rho * sigma * 1j * u - d) * (1 - np.exp(-d*self.T)) / (sigma**2 * (1 - g*np.exp(-d*self.T)))
+        return np.exp(C + D*self.v0 + 1j*u*np.log(self.S))
 
     def price(self, n=64):
-        # Exotique → Monte Carlo
-        if self.option_class == "exotique":
+        if self.option_class != "vanille":
             return self.price_mc()
-
-        # Vanille → Formule fermée Heston (Lewis)
         x, w = laggauss(n)
-        integrand = np.exp(-x) * np.real(
-            np.exp(-1j * x * np.log(self.K)) * self.char_func(x - 1j) / (1j * x)
-        )
+        integrand = np.exp(-x) * np.real(np.exp(-1j*x*np.log(self.K)) * self.char_func(x - 1j) / (1j * x))
         call_price = np.exp(-self.r * self.T) * np.sum(w * integrand) / np.pi
-
         price = call_price if self.option_type == "call" else call_price - self.S + self.K * np.exp(-self.r * self.T)
-        return -price if self.position == "sell" else price
+        return -price if self.buy_sell == "sell" else price
 
     def simulate_paths(self, n_paths=10000, n_steps=200):
         dt = self.T / n_steps

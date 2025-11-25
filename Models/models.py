@@ -22,7 +22,4 @@ class Model(ABC):
         """Retourne le prix du modèle"""
         pass
 
-    @abstractmethod
-    def implied_volatility(self, price, **kwargs):
-        """Calcule la volatilité implicite"""
-        pass
+    
