@@ -21,7 +21,7 @@ def app():
 
     st.subheader("Paramètres sélectionnés")
 
-    if not all(k in st.session_state for k in ["S", "K", "r", "sigma", "T", "option_type","buy_sell"]):
+    if not all(k in st.session_state for k in ["S", "K", "r", "sigma", "T", "option_type","buy_sell", "q", "option_class"]):
         st.error("Les paramètres ne sont pas présents dans session_state. Veuillez retourner à l'accueil.")
         return
 
@@ -32,6 +32,7 @@ def app():
     st.write(f"**Maturité (T)** : {st.session_state['T']}")
     st.write(f"**Dividendes (q)** : {st.session_state['q']}")
     st.write(f"**Type d'option** : {st.session_state['option_type']}")
+    st.write(f"**Classe** : {st.session_state['option_class']}")
     st.write(f"**Position** : {st.session_state['buy_sell']}")
 
 
@@ -47,7 +48,8 @@ def app():
             "T": st.session_state["T"],
             "option_type": st.session_state["option_type"],  
             "q": st.session_state["q"],               
-            "buy_sell": st.session_state["buy_sell"] 
+            "buy_sell": st.session_state["buy_sell"],
+            "option_class": st.session_state["option_class"] 
          }
 
 
