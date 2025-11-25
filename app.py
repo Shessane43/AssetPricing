@@ -1,10 +1,10 @@
 import streamlit as st
-from pages import accueil, data , greeks, pricing, vol
+from pages import accueil, data , greeks, pricing, vol, bond_swap_futures
 
 st.set_page_config(page_title="Asset Pricing App", layout="wide")
 st.title("Asset Pricing & Option Greeks")
 
-tabs = st.tabs(["Accueil", "Data", "Vol","Pricing", "Greeks"])
+tabs = st.tabs(["Accueil", "Data", "Vol","Pricing", "Greeks", "Bond & Swap & Futures"])
 
 with tabs[0]:
     accueil.app()  
@@ -16,4 +16,6 @@ with tabs[3]:
     pricing.app()
 with tabs[4]:
     greeks.app()
+with tabs[5]:
+    bond_swap_futures.app()
 

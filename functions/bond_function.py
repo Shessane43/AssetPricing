@@ -38,10 +38,11 @@ class Bond:
                          for f, time in zip(np.array(flows)[idx], times[idx])])
             remaining_value.append(value)
         
-        plt.figure(figsize=(8,5))
-        plt.plot(times, remaining_value, marker='o')
-        plt.xlabel('Time (years)')
-        plt.ylabel('Present value of remaining cash flows')
-        plt.title('Evolution of the bond value')
-        plt.grid(True)
-        plt.show()
+        fig, ax = plt.subplots(figsize=(8,5))
+        ax.plot(times, remaining_value, marker='o')
+        ax.set_xlabel('Time (years)')
+        ax.set_ylabel('Present value of remaining cash flows')
+        ax.set_title('Evolution of the bond value')
+        ax.grid(True)
+
+        return fig
