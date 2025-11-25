@@ -19,7 +19,6 @@ def init_session_state():
 def app():
     st.title("Pricing des options")
 
-    # --- 1. Rappel des paramètres choisis dans accueil ---
     st.subheader("Paramètres sélectionnés")
 
     if not all(k in st.session_state for k in ["S", "K", "r", "sigma", "T", "option_type","buy_sell"]):
@@ -36,11 +35,9 @@ def app():
     st.write(f"**Position** : {st.session_state['buy_sell']}")
 
 
-    # --- 2. Choix du modèle ---
     st.subheader("Choix du modèle")
     model_name = st.selectbox("Modèle de pricing", list(MODELS.keys()))
 
-    # --- 3. Appel du pricing ---
     if st.button("Calculer le prix"):
         params = {
             "S": st.session_state["S"],
@@ -48,9 +45,9 @@ def app():
             "r": st.session_state["r"],
             "sigma": st.session_state["sigma"],
             "T": st.session_state["T"],
-            "type": st.session_state["option_type"],  # ✅ correspond à la clé dans session_state
-            "q": st.session_state["q"],               # si ton modèle utilise le dividende
-            "buy_sell": st.session_state["buy_sell"]  # si tu veux garder la position
+            "option_type": st.session_state["option_type"],  
+            "q": st.session_state["q"],               
+            "buy_sell": st.session_state["buy_sell"] 
          }
 
 

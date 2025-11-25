@@ -1,41 +1,34 @@
 import numpy as np
-from scipy.stats import norm
-import yfinance as yf
-import streamlit as st
+import matplotlib.pyplot as plt
+
+def generate_vol_curve(vol_implicite_func, S, T, r, type_option, strikes=None):
+    """
+    Génère une courbe de volatilité implicite pour une série de strikes.
+    
+    Returns :
+    - strikes : array des strikes
+    - vols : array des vols implicites correspondantes
+    """
+    if strikes is None:
+        strikes = np.arange(int(S*0.8), int(S*1.2)+1, 5)
+    
+    vols = []
+    for K in strikes:
+        vol = vol_implicite_func(S=S, K=K, T=T, r=r, type_option=type_option)
+        vols.append(vol)
+    
+    return np.array(strikes), np.array(vols)
 
 
-class VolFunction:
-    """Outils liés à la volatilité implicite & smile."""
-
-    @staticmethod
-    def bs_vega(S, K, T, r, sigma, q=0.0):
-        d1 = (np.log(S/K) + (r - q + 0.5*sigma**2)*T) / (sigma*np.sqrt(T))
-        return S * np.exp(-q*T) * norm.pdf(d1) * np.sqrt(T)
-
-    def get_market_price():
-        """Récupère le prix marché du ticker en session state"""
-        ticker = st.session_state.get('ticker', None)
-        if ticker is None:
-            return None
-        try:
-            data = yf.Ticker(ticker).history(period="1d")
-            return data['Close'].iloc[-1]
-        except:
-            return None
-
-        
-    @staticmethod
-    def implied_vol(C_BS, S, K, T, r, q=0.0,sigma_init=0.2, tol=1e-6, max_iter=100): 
-        """
-        Newton-Raphson sur la différence (BS - marché), C_BS doit être fourni par la page Pricing.
-        """
-        C_market = VolFunction.get_market_price()
-        sigma = sigma_init
-        for _ in range(max_iter):
-            vega = VolFunction.bs_vega(S, K, T, r, sigma, q)
-            if vega == 0:
-                break
-            sigma -= (C_BS - C_market) / vega
-            if abs(C_BS - C_market) < tol:
-                break
-        return max(sigma, 0.0001)  # sécurité numérique
+def plot_vol_curve(strikes, vols, title="Courbe de volatilité implicite"):
+    """
+    Trace la courbe de volatilité implicite.
+    """
+    plt.style.use("seaborn-darkgrid")
+    fig, ax = plt.subplots(figsize=(8,5))
+    ax.plot(strikes, vols, marker="o", color="orange", lw=2)
+    ax.set_xlabel("Strike")
+    ax.set_ylabel("Vol implicite")
+    ax.set_title(title)
+    ax.grid(True)
+    return fig

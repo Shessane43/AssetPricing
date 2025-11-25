@@ -1,12 +1,11 @@
 # Models import
 from Models.blackscholes import BlackScholes
-from Models.heston import HestonLewis
+from Models.heston import HestonModel
 from Models.gammavariance import VarianceGamma
 
-# Dictionnaire central des modèles : classes, pas instances
 MODELS = {
     "Black-Scholes": BlackScholes,
-    "Heston": HestonLewis,
+    "Heston": HestonModel,
     "Gamma Variance": VarianceGamma
 }
 
@@ -19,8 +18,7 @@ def price_option(model_name: str, params: dict):
     if model_name not in MODELS:
         raise ValueError(f"Modèle '{model_name}' non reconnu")
 
-    # Instanciation dynamique avec les params
     ModelClass = MODELS[model_name]
-    model = ModelClass(**params)  # **params contient S, K, r, sigma, T, etc.
+    model = ModelClass(**params)  
     
     return model.price()

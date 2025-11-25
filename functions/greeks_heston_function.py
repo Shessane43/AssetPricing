@@ -1,4 +1,4 @@
-from Models.heston import HestonLewis
+from Models.heston import HestonModel
 
 class Greeks_Heston:
 
