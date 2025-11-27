@@ -12,10 +12,10 @@ class BlackScholes(Model):
         self.r = r
         self.sigma = sigma
         self.T = T
+        self.q = q 
         self.option_type = option_type.lower()
         self.buy_sell = buy_sell.lower()
         self.option_class = option_class.lower()  # "vanille" ou "exotique"
-        self.q = q  # dividend yield
      
     def price(self):
         if self.option_class != "vanille":
@@ -45,7 +45,7 @@ class BlackScholes(Model):
         delta_list = []
         S_values = np.linspace(self.S - points*self.S, self.S + points*self.S, number)
         for S in S_values:
-            modele = BlackScholes(S, self.K, self.r, self.sigma, self.T, self.option_type, self.buy_sell, self.option_class, self.q)
+            modele = BlackScholes(S, self.K, self.r, self.sigma, self.T, self.q, self.option_type, self.buy_sell, self.option_class)
             greeks = modele.delta()
             delta_list.append(greeks)
         return S_values, delta_list
@@ -59,7 +59,7 @@ class BlackScholes(Model):
         gamma_list = []
         S_values = np.linspace(self.S - points*self.S, self.S + points*self.S, number)
         for S in S_values:
-            modele = BlackScholes(S, self.K, self.r, self.sigma, self.T, self.option_type, self.buy_sell, self.option_class, self.q)
+            modele = BlackScholes(S, self.K, self.r, self.sigma, self.T,self.q, self.option_type, self.buy_sell, self.option_class)
             greeks = modele.gamma()
             gamma_list.append(greeks)
         return S_values, gamma_list
@@ -73,7 +73,7 @@ class BlackScholes(Model):
         vega_list = []
         sigma_values = np.linspace(self.sigma - points*self.sigma, self.sigma + points*self.sigma, number)
         for sigma in sigma_values:
-            modele = BlackScholes(self.S, self.K, self.r, sigma, self.T, self.option_type, self.buy_sell, self.option_class, self.q)
+            modele = BlackScholes(self.S, self.K, self.r, sigma, self.T,self.q, self.option_type, self.buy_sell, self.option_class)
             greeks = modele.vega()
             vega_list.append(greeks)
         return sigma_values, vega_list
@@ -95,7 +95,7 @@ class BlackScholes(Model):
         theta_list = []
         T_values = np.linspace(self.T - points*self.T, self.T + points*self.T, number)
         for T in T_values:
-            modele = BlackScholes(self.S, self.K, self.r, self.sigma, T, self.option_type, self.buy_sell, self.option_class,self.q)
+            modele = BlackScholes(self.S, self.K, self.r, self.sigma, T,self.q,self.option_type, self.buy_sell, self.option_class)
             greeks = modele.theta()
             theta_list.append(greeks)
         return T_values, theta_list
@@ -113,7 +113,7 @@ class BlackScholes(Model):
         rho_list = []
         r_values = np.linspace(self.r - points*self.r, self.r + points*self.r, number)
         for r in r_values:
-            modele = BlackScholes(self.S, self.K, r, self.sigma, self.T, self.option_type, self.buy_sell, self.option_class,self.q)
+            modele = BlackScholes(self.S, self.K, r, self.sigma, self.T,self.q ,self.option_type, self.buy_sell, self.option_class)
             greeks = modele.rho()
             rho_list.append(greeks)
         return r_values, rho_list

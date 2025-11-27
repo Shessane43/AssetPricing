@@ -14,7 +14,7 @@ def implied_volatility(S, K, T, r, q, market_price, option_type, tol=1e-6, max_i
         d1 = (np.log(S / K) + (r - q + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
         d2 = d1 - sigma * np.sqrt(T)
 
-        if option_type.lower() == "Call":
+        if option_type.lower() == "call":
             price_est = S * np.exp(-q*T) * norm.cdf(d1) - K * np.exp(-r*T) * norm.cdf(d2)
         else:
             price_est = K * np.exp(-r*T) * norm.cdf(-d2) - S * np.exp(-q*T) * norm.cdf(-d1)
@@ -31,24 +31,27 @@ def implied_volatility(S, K, T, r, q, market_price, option_type, tol=1e-6, max_i
 
 
 def get_market_prices_yahoo(ticker, option_type, T_days=None):
-    """
-    Récupère les prix d'options sur Yahoo Finance
-    - option_type: "call" ou "put"
-    - T_days : maturité approximative en jours (None = prochaine date disponible)
-    """
     stock = yf.Ticker(ticker)
     dates = stock.options
     if not dates:
         return {}
 
-    # choisir la date la plus proche de T_days
+    # maturité la plus proche de T_days
     if T_days is not None:
-        maturity = min(dates, key=lambda x: abs(pd.to_datetime(x) - pd.Timestamp.today()).days - T_days)
+        maturity = min(
+            dates,
+            key=lambda x: abs((pd.to_datetime(x) - pd.Timestamp.today()).days - T_days)
+        )
     else:
         maturity = dates[0]
 
+    # récup chaîne
     chain = stock.option_chain(maturity)
-    df = chain.calls if option_type.lower() == "Call" else chain.puts
+    df = chain.calls if option_type.lower() == "call" else chain.puts
+
+    # filtre prix marché valides
+    df = df[df["lastPrice"] > 0]
+
     return {row['strike']: row['lastPrice'] for _, row in df.iterrows()}
 
 

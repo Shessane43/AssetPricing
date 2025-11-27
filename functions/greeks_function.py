@@ -12,19 +12,16 @@ class Greeks():
         self.T = T
         self.r = r
         self.sigma = sigma
-        self.theta = theta
+        self.theta_classic = theta
         self.nu = nu
         self.v0 = v0
         self.kappa = kappa
-        self.theta = theta_heston
+        self.theta_heston = theta_heston
         self.sigma_v = sigma_v
-        self.rho = rho
+        self.rho_value = rho
         self.option_type = option_type
         self.model = model
-        if buy_sell == "Buy":
-            self.buy_sell = True
-        else:
-            self.buy_sell = False
+        self.buy_sell = buy_sell
 
     def delta(self):
         if self.model == "Black-Scholes":
@@ -32,12 +29,12 @@ class Greeks():
             return greeks_bs.delta()
         elif self.model == "Heston":
             greeks_heston = Greeks_Heston(self.S, self.K, self.T, self.r,
-                                          self.kappa, self.theta, self.sigma_v, self.rho, self.v0,
+                                          self.kappa, self.theta_heston, self.sigma_v, self.rho, self.v0,
                                           self.option_type, self.buy_sell)
             return greeks_heston.delta()
         elif self.model == "Gamma Variance":
             greeks_vg = Greeks_VarianceGamma(self.S, self.K, self.r, self.T,
-                                             self.sigma, self.theta, self.nu,
+                                             self.sigma, self.theta_classic, self.nu,
                                              self.option_type, self.buy_sell)
             return greeks_vg.delta()
     
@@ -46,8 +43,8 @@ class Greeks():
         S_values = np.linspace(self.S - points*self.S, self.S + points*self.S, number)
         for S in S_values:
             greeks = Greeks(self.option_type, self.model, S, self.K, self.T, self.r,
-                            self.sigma, self.theta, self.nu, self.v0,
-                            self.kappa, self.theta, self.sigma_v, self.rho,
+                            self.sigma, self.theta_classic, self.nu, self.v0,
+                            self.kappa, self.theta_heston, self.sigma_v, self.rho_value,
                             self.buy_sell)
             delta_list.append(greeks.delta())
         return S_values, delta_list
@@ -58,12 +55,12 @@ class Greeks():
             return greeks_bs.gamma()
         elif self.model == "Heston":
             greeks_heston = Greeks_Heston(self.S, self.K, self.T, self.r,
-                                          self.kappa, self.theta, self.sigma_v, self.rho, self.v0,
+                                          self.kappa, self.theta_heston, self.sigma_v, self.rho, self.v0,
                                           self.option_type, self.buy_sell)
             return greeks_heston.gamma()
         elif self.model == "Gamma Variance":
             greeks_vg = Greeks_VarianceGamma(self.S, self.K, self.r, self.T,
-                                             self.sigma, self.theta, self.nu,
+                                             self.sigma, self.theta_classic, self.nu,
                                              self.option_type, self.buy_sell)
             return greeks_vg.gamma()
         
@@ -72,8 +69,8 @@ class Greeks():
         S_values = np.linspace(self.S - points*self.S, self.S + points*self.S, number)
         for S in S_values:
             greeks = Greeks(self.option_type, self.model, S, self.K, self.T, self.r,
-                            self.sigma, self.theta, self.nu, self.v0,
-                            self.kappa, self.theta, self.sigma_v, self.rho,
+                            self.sigma, self.theta_classic, self.nu, self.v0,
+                            self.kappa, self.theta_heston, self.sigma_v, self.rho_value,
                             self.buy_sell)
             gamma_list.append(greeks.gamma())
         return S_values, gamma_list
@@ -84,12 +81,12 @@ class Greeks():
             return greeks_bs.vega()
         elif self.model == "Heston":
             greeks_heston = Greeks_Heston(self.S, self.K, self.T, self.r,
-                                          self.kappa, self.theta, self.sigma_v, self.rho, self.v0,
+                                          self.kappa, self.theta_heston, self.sigma_v, self.rho_value, self.v0,
                                           self.option_type, self.buy_sell)
             return greeks_heston.vega()
         elif self.model == "Gamma Variance":
             greeks_vg = Greeks_VarianceGamma(self.S, self.K, self.r, self.T,
-                                             self.sigma, self.theta, self.nu,
+                                             self.sigma, self.theta_classic, self.nu,
                                              self.option_type, self.buy_sell)
             return greeks_vg.vega()
 
@@ -98,8 +95,8 @@ class Greeks():
         S_values = np.linspace(self.S - points*self.S, self.S + points*self.S, number)
         for S in S_values:
             greeks = Greeks(self.option_type, self.model, S, self.K, self.T, self.r,
-                            self.sigma, self.theta, self.nu, self.v0,
-                            self.kappa, self.theta, self.sigma_v, self.rho,
+                            self.sigma, self.theta_classic, self.nu, self.v0,
+                            self.kappa, self.theta_heston, self.sigma_v, self.rho_value,
                             self.buy_sell)
             vega_list.append(greeks.vega())
         return S_values, vega_list
@@ -110,25 +107,27 @@ class Greeks():
             return greeks_bs.theta()
         elif self.model == "Heston":
             greeks_heston = Greeks_Heston(self.S, self.K, self.T, self.r,
-                                          self.kappa, self.theta, self.sigma_v, self.rho, self.v0,
-                                          self.option_type, self.buy_sell)
+                                        self.kappa, self.theta_heston, self.sigma_v, self.rho_value, self.v0,
+                                        self.option_type, self.buy_sell)
             return greeks_heston.theta()
         elif self.model == "Gamma Variance":
             greeks_vg = Greeks_VarianceGamma(self.S, self.K, self.r, self.T,
-                                             self.sigma, self.theta, self.nu,
-                                             self.option_type, self.buy_sell)
+                                            self.sigma, self.theta_classic, self.nu,
+                                            self.option_type, self.buy_sell)
             return greeks_vg.theta()
+
+
     
-    def lists_theta(self, points = 0.3, number= 100, h=1e-4):
+    def lists_theta(self, points=0.3, number=100, h=1e-4):
         theta_list = []
         S_values = np.linspace(self.S - points*self.S, self.S + points*self.S, number)
+        original_S = self.S
         for S in S_values:
-            greeks = Greeks(self.option_type, self.model, S, self.K, self.T, self.r,
-                            self.sigma, self.theta, self.nu, self.v0,
-                            self.kappa, self.theta, self.sigma_v, self.rho,
-                            self.buy_sell)
-            theta_list.append(greeks.theta())
+            self.S = S
+            theta_list.append(self.theta())
+        self.S = original_S
         return S_values, theta_list
+
 
     def rho(self):
         if self.model == "Black-Scholes":
@@ -136,45 +135,56 @@ class Greeks():
             return greeks_bs.rho()
         elif self.model == "Heston":
             greeks_heston = Greeks_Heston(self.S, self.K, self.T, self.r,
-                                          self.kappa, self.theta, self.sigma_v, self.rho, self.v0,
-                                          self.option_type, self.buy_sell)
+                                        self.kappa, self.theta_heston, self.sigma_v, self.rho_value, self.v0,
+                                        self.option_type, self.buy_sell)
             return greeks_heston.rho()
         elif self.model == "Gamma Variance":
             greeks_vg = Greeks_VarianceGamma(self.S, self.K, self.r, self.T,
-                                             self.sigma, self.theta, self.nu,
-                                             self.option_type, self.buy_sell)
+                                            self.sigma, self.theta_classic, self.nu,
+                                            self.option_type, self.buy_sell)
             return greeks_vg.rho()
+
     
     def lists_rho(self, points = 0.3, number= 100, h=1e-4):
         rho_list = []
         S_values = np.linspace(self.S - points*self.S, self.S + points*self.S, number)
         for S in S_values:
             greeks = Greeks(self.option_type, self.model, S, self.K, self.T, self.r,
-                            self.sigma, self.theta, self.nu, self.v0,
-                            self.kappa, self.theta, self.sigma_v, self.rho,
+                            self.sigma, self.theta_classic, self.nu, self.v0,
+                            self.kappa, self.theta_heston, self.sigma_v, self.rho_value,
                             self.buy_sell)
             rho_list.append(greeks.rho())
         return S_values, rho_list
     
     def plot_all_greeks(self, points=0.3, number=100, h=1e-4):
+        greeks_list = [
+            ("Delta", self.lists_delta(points, number, h)[1], self.lists_delta(points, number, h)[0], "blue"),
+            ("Gamma", self.lists_gamma(points, number, h)[1], self.lists_gamma(points, number, h)[0], "green"),
+            ("Vega", self.lists_vega(points, number, h)[1], self.lists_vega(points, number, h)[0], "red"),
+            ("Theta", self.lists_theta(points, number, h)[1], self.lists_theta(points, number, h)[0], "orange"),
+            ("Rho", self.lists_rho(points, number, h)[1], self.lists_rho(points, number, h)[0], "purple")
+        ]
 
-        S_delta, delta_values = self.lists_delta(points, number, h)
-        S_gamma, gamma_values = self.lists_gamma(points, number, h)
-        S_vega, vega_values = self.lists_vega(points, number, h)
-        S_theta, theta_values = self.lists_theta(points, number, h)
-        S_rho, rho_values = self.lists_rho(points, number, h)
+        fig, axes = plt.subplots(1, 5, figsize=(20,4))  # 1 ligne, 5 colonnes
 
-        plt.figure(figsize=(12, 8))
+        fig.patch.set_facecolor('black')
+        
+        for ax, (name, values, S_vals, color) in zip(axes, greeks_list):
+            ax.set_facecolor('black')
+            ax.plot(S_vals, values, color=color, linewidth=2)
+            
+            # Style axes
+            for side in ["bottom", "top", "left", "right"]:
+                ax.spines[side].set_color("orange")
+            ax.tick_params(axis="x", colors="orange")
+            ax.tick_params(axis="y", colors="orange")
+            
+            ax.set_title(name, color="orange")
+            ax.grid(True, linestyle="--", color="orange", alpha=0.3)
 
-        plt.plot(S_delta, delta_values, label="Delta")
-        plt.plot(S_gamma, gamma_values, label="Gamma")
-        plt.plot(S_vega, vega_values, label="Vega")
-        plt.plot(S_theta, theta_values, label="Theta")
-        plt.plot(S_rho, rho_values, label="Rho")
+        plt.tight_layout()
+        return fig
 
-        plt.title("Greeks vs Underlying Price S")
-        plt.xlabel("Underlying Price S")
-        plt.ylabel("Greeks")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
+
+
+

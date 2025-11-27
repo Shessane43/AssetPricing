@@ -69,7 +69,6 @@ class PayoffCalculator:
         elif params.option_type == "Lookback":
             payoff = PayoffCalculator.lookback_payoff(S_range, K, params.option_type)
 
-        # Position (Buy/Sell)
         if params.buy_sell == "Sell":
             payoff = -payoff
 

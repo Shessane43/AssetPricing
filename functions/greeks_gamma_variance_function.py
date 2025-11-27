@@ -4,7 +4,7 @@ from Models.gammavariance import VarianceGamma
 
 class Greeks_VarianceGamma:
 
-    def __init__(self, S, K, r, T, sigma, theta, nu, option_type="call", buy_sell=True):
+    def __init__(self, S, K, r, T, sigma, theta, nu, option_type, buy_sell=True):
         self.S = S
         self.K = K
         self.T = T

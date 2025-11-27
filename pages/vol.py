@@ -10,13 +10,13 @@ def app():
     st.title("Volatilité implicite")
 
     # ---------- 1. Récupérer les paramètres depuis la session ----------
-    ticker = st.session_state.get("ticker", "AAPL")
-    S = st.session_state.get("S", 150.0)
-    K = st.session_state.get("K", 150.0)
-    T = st.session_state.get("T", 1.0)
-    r = st.session_state.get("r", 0.02)
-    q = st.session_state.get("q", 0.0)
-    option_type = st.session_state.get("option_type", "call")
+    ticker = st.session_state.get("ticker")
+    S = st.session_state.get("S")
+    K = st.session_state.get("K")
+    T = st.session_state.get("T")
+    r = st.session_state.get("r")
+    q = st.session_state.get("q")
+    option_type = st.session_state.get("option_type")
 
     st.write(f"Ticker choisi : {ticker}")
     st.write(f"Spot (S) : {S}, Strike (K) : {K}, T : {T} an(s), r : {r}, q : {q}, type : {option_type}")

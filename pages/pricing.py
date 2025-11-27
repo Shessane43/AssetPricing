@@ -1,15 +1,6 @@
 import streamlit as st
 from functions.pricing_function import price_option, MODELS
 
-def init_session_state():
-    for key, value in {
-        "ticker": None, "S": None, "K": None, "T": None, "r": None, "sigma": None,
-        "q": None, "option_class": None, "option_type": None, "buy_sell": None,
-        "v0": None, "kappa": None, "theta": None, "sigma_v": None, "rho": None,
-        "model_name": None
-    }.items():
-        st.session_state.setdefault(key, value)
-
 def app():
     st.title("Pricing des options")
 

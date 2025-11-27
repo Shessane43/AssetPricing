@@ -4,7 +4,7 @@ import numpy as np
 
 class Greeks_BS:
 
-    def __init__(self, S, K, T, r, sigma, option_type, buy_sell = True):
+    def __init__(self, S, K, T, r, sigma, option_type, buy_sell):
         self.S = S
         self.K = K
         self.T = T
@@ -16,13 +16,13 @@ class Greeks_BS:
         self.d2 = self.d1 - self.sigma * np.sqrt(self.T)
 
     def delta(self):
-        if self.option_type == 'call':
-            if self.buy_sell:
+        if self.option_type == 'Call':
+            if self.buy_sell == "Buy":
                 return norm.cdf(self.d1)
             else:
                 return - norm.cdf(self.d1)
         else:
-            if self.buy_sell:
+            if self.buy_sell == 'Buy':
                 return norm.cdf(self.d1) - 1
             else:
                 return 1 - norm.cdf(self.d1)
@@ -40,7 +40,7 @@ class Greeks_BS:
             return - self.S * norm.pdf(self.d1) * np.sqrt(self.T)
     
     def theta(self):
-        if self.option_type == 'call':
+        if self.option_type == 'Call':
             if self.buy_sell:
                 return (- (self.S * norm.pdf(self.d1) * self.sigma) / (2 * np.sqrt(self.T)) - self.r * self.K * np.exp(-self.r * self.T) * norm.cdf(self.d2))
             else:
@@ -52,7 +52,7 @@ class Greeks_BS:
                 return ( (self.S * norm.pdf(self.d1) * self.sigma) / (2 * np.sqrt(self.T)) - self.r * self.K * np.exp(-self.r * self.T) * norm.cdf(-self.d2))
     
     def rho(self):
-        if self.option_type == 'call':
+        if self.option_type == 'Call':
             if self.buy_sell:
                 return self.K * self.T * np.exp(-self.r * self.T) * norm.cdf(self.d2) / 100
             else:
