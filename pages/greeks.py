@@ -30,11 +30,9 @@ def app():
 
     st.subheader(f"Modèle choisi : {model_name}")
 
-    if st.button("Afficher les Greeks"):
-        if model_name == "Black-Scholes":
-            greeks = Greeks(option_type, model_name, S, K, T, r, sigma=sigma, buy_sell=buy_sell)
-            fig = greeks.plot_all_greeks()
-            st.pyplot(fig)
+    
+    greeks = Greeks(option_type, model_name, S, K, T, r, sigma=sigma, buy_sell=buy_sell)
+    fig = greeks.plot_all_greeks()
+    st.pyplot(fig)
 
-        else:
-            st.error("Modèle non reconnu.")
+    
