@@ -9,7 +9,6 @@ from functions.vol_function import (
 )
 
 def app():
-    st.title("Volatilité implicite")
 
     # ---------- 1. Récupérer les paramètres depuis la session ----------
     ticker = st.session_state.get("ticker")
@@ -20,8 +19,20 @@ def app():
     q = st.session_state.get("q")
     option_type = st.session_state.get("option_type")
 
-    st.write(f"Ticker choisi : {ticker}")
-    st.write(f"Spot (S) : {S}, Strike (K) : {K}, T : {T} an(s), r : {r}, q : {q}, type : {option_type}")
+    with st.container(border=True):
+        st.markdown(
+            f"""
+            **Ticker** : **{ticker}**
+
+            **Spot (S)** : {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Strike (K)** : {K:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Maturité (T)** : {T} an(s)
+
+            **Taux sans risque (r)** : {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Dividendes (q)** : {q:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Type d'option** : **{option_type}**
+            """
+        )
 
     market_prices_calls, market_prices_puts, maturity = get_market_prices_yahoo(ticker, T_days=int(T*365))
     if not market_prices_calls and not market_prices_puts:
@@ -36,11 +47,13 @@ def app():
         vols,
         maturity=maturity,
         K=K,
-        title=f"Volatilité implicite ({option_type})"
     )
+    st.subheader("Courbe de volatilité implicite")
     st.pyplot(fig)
 
     all_matu = get_all_option_maturities(ticker)
     vol_curves = generate_vol_curves_multiple_maturities(S, all_matu, r, q, option_type, ticker)
     fig_3d = plot_vol_surface(vol_curves)
+    st.subheader("Surface de volatilité implicite")
+
     st.plotly_chart(fig_3d, width='stretch')

@@ -2,7 +2,6 @@ import streamlit as st
 from functions.pricing_function import price_option, MODELS
 
 def app():
-    st.title("Pricing des options")
 
     if not all(k in st.session_state for k in [
         "S", "K", "r", "sigma", "T", "q", "option_type", 
@@ -12,16 +11,35 @@ def app():
         return
 
     st.subheader("Paramètres sélectionnés")
-    st.write(f"Spot (S) : {st.session_state['S']}")
-    st.write(f"Strike (K) : {st.session_state['K']}")
-    st.write(f"Taux sans risque (r) : {st.session_state['r']}")
-    st.write(f"Volatilité (σ) : {st.session_state['sigma']}")
-    st.write(f"Maturité (T) : {st.session_state['T']}")
-    st.write(f"Dividendes (q) : {st.session_state['q']}")
-    st.write(f"Type d'option : {st.session_state['option_type']}")
-    st.write(f"Classe : {st.session_state['option_class']}")
-    st.write(f"Position : {st.session_state['buy_sell']}")
 
+    ticker = st.session_state.get("ticker")
+    S = st.session_state.get("S")
+    K = st.session_state.get("K")
+    T = st.session_state.get("T")
+    r = st.session_state.get("r")
+    sigma = st.session_state.get("sigma")
+    q = st.session_state.get("q")
+    option_type = st.session_state.get("option_type")
+
+    with st.container(border=True):
+        st.markdown(
+            f"""
+            **Ticker** : **{ticker}**
+
+            **Spot (S)** : {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Strike (K)** : {K:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Maturité (T)** : {T} an(s)
+
+
+            **Taux sans risque (r)** : {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Volatilité (σ)** : {sigma:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Dividendes (q)** : {q:.2%} 
+
+            **Type d'option** : **{option_type}**
+            """
+        )
+
+            
     st.subheader("Choix du modèle")
     model_name = st.selectbox("Modèle de pricing", list(MODELS.keys()))
     st.session_state["model_name"] = model_name

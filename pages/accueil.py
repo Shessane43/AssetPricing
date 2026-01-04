@@ -10,9 +10,7 @@ from functions.accueil_function import (
 
 def app():
 
-    st.title("Asset Pricing & Option Greeks")
     st.subheader("Bienvenue dans l'application")
-    st.markdown("---")
 
     st.write("Choisissez le ticker, les paramètres, puis visualisez le payoff.")
 

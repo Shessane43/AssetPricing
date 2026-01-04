@@ -4,7 +4,6 @@ from Models.blackscholes import BlackScholes
 from functions.greeks_function import Greeks
 
 def app():
-    st.title("Greeks des Options")
 
     # Vérification des paramètres
     required = ["S","K","T","r","sigma","option_type","buy_sell","model_name","option_class"]

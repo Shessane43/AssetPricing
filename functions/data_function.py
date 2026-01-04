@@ -46,7 +46,6 @@ class MarketData:
 
 def show_data_page():
     """Interface affichée dans l’onglet Data."""
-    st.header("Market Data")
 
     if "ticker" not in st.session_state:
         st.info("Veuillez d'abord sélectionner un ticker dans l'onglet Accueil.")

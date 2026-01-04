@@ -196,45 +196,100 @@ def plot_vol_curve(strikes, vols, maturity=None, K=None, title="Courbe de volati
     strikes_plot = strikes[mask]
     vols_plot = vols[mask]
 
-    # --- Spline lissée via la fonction existante ---
+    # --- Spline lissée ---
     from copy import deepcopy
-    strikes_smooth, vols_smooth = smooth_vol_curve(deepcopy(strikes_plot), deepcopy(vols_plot), num_points=num_points, smoothing_factor=smoothing_factor)
+    strikes_smooth, vols_smooth = smooth_vol_curve(
+        deepcopy(strikes_plot),
+        deepcopy(vols_plot),
+        num_points=num_points,
+        smoothing_factor=smoothing_factor
+    )
 
-    # --- Création du plot ---
-    plt.style.use("ggplot")
-    fig, ax = plt.subplots(figsize=(12,6))
+    # --- Création du plot (dark theme) ---
+    fig, ax = plt.subplots(figsize=(12, 6))
+    fig.patch.set_facecolor("black")
+    ax.set_facecolor("black")
 
-    # Points réels en croix
-    ax.scatter(strikes_plot, vols_plot, marker='x', color='orange', label='Points réels', s=80)
+    # Points réels
+    ax.scatter(
+        strikes_plot,
+        vols_plot,
+        marker="x",
+        color="orange",
+        s=80,
+        label="Points réels"
+    )
 
-    # Spline lissée en trait plein
-    ax.plot(strikes_smooth, vols_smooth, '-', color='blue', lw=2, label='Spline lissée')
+    # Spline lissée
+    ax.plot(
+        strikes_smooth,
+        vols_smooth,
+        color="orange",
+        lw=2,
+        label="Spline lissée"
+    )
 
-    # Ligne verticale et estimation pour K
+    # Ligne verticale et estimation au strike K
     if K is not None:
-        # estimation via la spline
         vol_at_K = np.interp(K, strikes_smooth, vols_smooth)
-        ax.axvline(K, color='red', linestyle='--', lw=2)
-        ax.scatter(K, vol_at_K, color='red', s=100, zorder=5)
-        ax.legend(title=f"Vol estimée au strike {K}: {vol_at_K:.4f}")
-    else:
-        ax.legend()
 
-    # Titres et axes
+        ax.axvline(
+            K,
+            color="orange",
+            linestyle="--",
+            lw=2,
+            alpha=0.7
+        )
+        ax.scatter(
+            K,
+            vol_at_K,
+            color="orange",
+            s=100,
+            zorder=5
+        )
+
+        legend_title = f"Vol estimée au strike {round(K,4)} : {round(vol_at_K,4)}"
+    else:
+        legend_title = None
+
+    # Axes style
+    for side in ("bottom", "top", "left", "right"):
+        ax.spines[side].set_color("orange")
+
+    ax.tick_params(colors="orange")
+    ax.set_xlabel("Strike", color="orange")
+    ax.set_ylabel("Volatilité implicite", color="orange")
+
+    # Titre
     full_title = title
     if maturity is not None:
-        full_title += f" - Maturité: {maturity}"
-    ax.set_title(full_title)
-    ax.set_xlabel("Strike")
-    ax.set_ylabel("Volatilité implicite")
-    ax.grid(True)
+        full_title += f" - Maturité : {maturity}"
+    ax.set_title(full_title, color="orange")
 
-    # Ajustement des limites
+    # Grille
+    ax.grid(True, linestyle="--", color="orange", alpha=0.3)
+
+    # Légende
+    legend = ax.legend(
+        facecolor="black",
+        edgecolor="orange",
+        title=legend_title
+    )
+    if legend.get_title():
+        legend.get_title().set_color("orange")
+    for text in legend.get_texts():
+        text.set_color("orange")
+
+    # Limites
     if vols_plot.size > 0:
-        ax.set_ylim(0, max(vols_plot)*1.2)
+        ax.set_ylim(0, max(vols_plot) * 1.2)
+
     if strikes_plot.size > 0:
         buffer = (max(strikes_plot) - min(strikes_plot)) * 0.1
-        ax.set_xlim(min(strikes_plot)-buffer, max(strikes_plot)+buffer)
+        ax.set_xlim(
+            min(strikes_plot) - buffer,
+            max(strikes_plot) + buffer
+        )
 
     return fig
 
