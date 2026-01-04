@@ -42,7 +42,9 @@ def app():
             **Volatilité (σ)** : {sigma:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
             **Dividendes (q)** : {q:.2%} 
 
-            **Type d'option** : **{option_type}**
+            **Type d'option** : **{option_type}** &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Position** : **{buy_sell}**
+
             """
         )
 
