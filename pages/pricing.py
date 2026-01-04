@@ -10,8 +10,6 @@ def app():
         st.error("Paramètres manquants. Retournez à l'accueil.")
         return
 
-    st.subheader("Paramètres sélectionnés")
-
     ticker = st.session_state.get("ticker")
     S = st.session_state.get("S")
     K = st.session_state.get("K")
