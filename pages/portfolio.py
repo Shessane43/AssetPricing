@@ -8,7 +8,7 @@ from functions.portfolio_function import (
     calculate_portfolio_greeks,
     calculate_portfolio_value
 )
-from functions.accueil_function import ALL_TICKERS
+from functions.parameters_function import ALL_TICKERS
 
 def app():
     st.session_state.setdefault("portfolio", [])

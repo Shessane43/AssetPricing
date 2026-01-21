@@ -1,6 +1,6 @@
 import streamlit as st
 import numpy as np
-from functions.accueil_function import (
+from functions.parameters_function import (
     ALL_TICKERS,
     MarketDataFetcher,
     OptionParameters,
