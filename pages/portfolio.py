@@ -155,7 +155,8 @@ def app():
             p for j, p in enumerate(st.session_state["portfolio"]) if j != to_delete
         ]
         st.warning(
-    f"Voulez-vous vraiment supprimer le {removed.get('option_type', removed['position_type'])} "
-    f"{removed['ticker']} ? - Cliquez à nouveau pour confirmer")
+    f"Are you sure you want to remove the {removed.get('option_type', removed['position_type'])} "
+    f"{removed['ticker']}? - Click again to confirm")
+
         st.stop()  # arrête le script ici et relance automatiquement avec l'état mis à jour
 
