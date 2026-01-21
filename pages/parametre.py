@@ -30,7 +30,11 @@ def app():
     else:
         st.session_state["option_type"] = st.selectbox("Exotic type", ["Asian", "Lookback"])
 
-    st.session_state["K"] = st.number_input("Strike (K)", value=last_price)
+    if "K" not in st.session_state:
+        st.session_state["K"] = last_price
+
+    # Number input qui met à jour K
+    st.session_state["K"] = st.number_input("Strike (K)", value=st.session_state["K"])
     st.session_state["T"] = st.number_input("Maturity (T in years)", value=1.0)
     st.session_state["r"] = st.number_input("Risk-free rate (r)", value=0.02)
     st.session_state["sigma"] = st.number_input("Volatility (σ)", value=0.2)
