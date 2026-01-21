@@ -12,7 +12,7 @@ def app():
         st.subheader("Bond Parameters")
         nominal = st.number_input("Nominal (€)", value=1000.0, step=100.0)
         coupon_rate = st.number_input("Coupon Rate (%)", value=5.0, step=0.1) / 100
-        rate = st.number_input("Discount Rate (%)", value=3.0, step=0.1) / 100
+        rate = st.number_input("Interest Rate (%)", value=3.0, step=0.1) / 100
         maturity = st.number_input("Maturity (years)", value=5, step=1)
         frequency = st.number_input("Coupon Payments per Year", value=1, step=1)
         
