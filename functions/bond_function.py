@@ -34,15 +34,37 @@ class Bond:
         
         for t in times:
             idx = times >= t
-            value = sum([f / (1 + self.rate / self.frequency) ** ((time - t) * self.frequency)
-                         for f, time in zip(np.array(flows)[idx], times[idx])])
+            value = sum([
+                f / (1 + self.rate / self.frequency) ** ((time - t) * self.frequency)
+                for f, time in zip(np.array(flows)[idx], times[idx])
+            ])
             remaining_value.append(value)
-        
-        fig, ax = plt.subplots(figsize=(8,5))
-        ax.plot(times, remaining_value, marker='o')
-        ax.set_xlabel('Time (years)')
-        ax.set_ylabel('Present value of remaining cash flows')
-        ax.set_title('Evolution of the bond value')
-        ax.grid(True)
+
+        fig, ax = plt.subplots(figsize=(10,5))
+        fig.patch.set_facecolor("black")
+        ax.set_facecolor("black")
+
+        ax.plot(
+            times,
+            remaining_value,
+            marker="o",
+            color="orange",
+            lw=2,
+            label="Remaining value"
+        )
+
+        for side in ("bottom", "top", "left", "right"):
+            ax.spines[side].set_color("orange")
+
+        ax.tick_params(colors="orange")
+        ax.set_xlabel("Time (years)", color="orange")
+        ax.set_ylabel("Present value of remaining cash flows", color="orange")
+        ax.set_title("Evolution of the bond value", color="orange")
+        ax.grid(True, linestyle="--", color="orange", alpha=0.3)
+
+        legend = ax.legend(facecolor="black", edgecolor="orange")
+        for text in legend.get_texts():
+            text.set_color("orange")
 
         return fig
+

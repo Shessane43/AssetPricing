@@ -42,11 +42,30 @@ class Swap:
         times = np.arange(0, self.n_periods + 1) / self.frequency
         values = [self.price_from(p) for p in range(self.n_periods + 1)]
         
-        fig, ax = plt.subplots(figsize=(8,5))
-        ax.plot(times, values, marker='o')
-        ax.set_xlabel('Time (years)')
-        ax.set_ylabel('Remaining net value of the swap')
-        ax.set_title('Evolution of the swap value over time')
-        ax.grid(True)
+        fig, ax = plt.subplots(figsize=(10,5))
+        fig.patch.set_facecolor("black")
+        ax.set_facecolor("black")
+
+        ax.plot(
+            times,
+            values,
+            marker="o",
+            color="orange",
+            lw=2,
+            label="Remaining value"
+        )
+
+        for side in ("bottom", "top", "left", "right"):
+            ax.spines[side].set_color("orange")
+
+        ax.tick_params(colors="orange")
+        ax.set_xlabel("Time (years)", color="orange")
+        ax.set_ylabel("Remaining net value of the swap", color="orange")
+        ax.set_title("Evolution of the swap value over time", color="orange")
+        ax.grid(True, linestyle="--", color="orange", alpha=0.3)
+
+        legend = ax.legend(facecolor="black", edgecolor="orange")
+        for text in legend.get_texts():
+            text.set_color("orange")
 
         return fig
