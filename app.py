@@ -1,26 +1,44 @@
 import streamlit as st
-from pages import accueil, data , greeks, pricing, vol, bond_swap_futures, structured, portfolio
+from pages import accueil, data, greeks, pricing, vol, bond_swap_futures, structured, portfolio, parametre
 
-st.set_page_config(page_title="Asset Pricing App", layout="wide")
-st.title("Volatility & Option Pricing")
+# Page configuration
+st.set_page_config(
+    page_title="Asset Pricing App",
+    layout="wide"
+)
 
-tabs = st.tabs(["Accueil", "Data","Pricing", "Greeks","Implied Volatility","Bond & Swap & Futures",'Structured Products',"My Own Portfolio"])
+# Page selection: simple selectbox in the main area (not sidebar)
+page = st.selectbox(
+    "Select a page:",
+    [
+        "Home", 
+        "Parameters & Payoff", 
+        "Data",
+        "Pricing",
+        "Greeks",
+        "Implied Volatility",
+        "Bond, Swap & Futures",
+        "Structured Products",
+        "My Portfolio"
+    ]
+)
 
-with tabs[0]:
-    accueil.app()  
-with tabs[1]:
+# Display pages
+if page == "Home":
+    accueil.app()
+elif page == "Parameters & Payoff":
+    parametre.app()
+elif page == "Data":
     data.app()
-with tabs[2]:
+elif page == "Pricing":
     pricing.app()
-with tabs[3]:
+elif page == "Greeks":
     greeks.app()
-with tabs[4]:
+elif page == "Implied Volatility":
     vol.app()
-with tabs[5]:
+elif page == "Bond, Swap & Futures":
     bond_swap_futures.app()
-with tabs[6]:
+elif page == "Structured Products":
     structured.app()
-with tabs[7]:
+elif page == "My Portfolio":
     portfolio.app()
-
-

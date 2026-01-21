@@ -54,7 +54,7 @@ def app():
                     "qty": qty,
                     "option_type": option_type,
                     "model_name": model_name,
-                    "option_class": "Vanille"
+                    "option_class": "Vanilla"
                 }
                 st.session_state["portfolio"] = add_position(st.session_state["portfolio"], position)
                 st.success(f"Option {option_type} sur {ticker} ajoutée !")
@@ -78,8 +78,27 @@ def app():
     st.table(greeks)
 
     # --- Supprimer ---
+    # --- Supprimer ---
+    # --- Supprimer ---
+    to_delete = None
+
     for i, pos in enumerate(st.session_state["portfolio"]):
-        if st.button(f"Supprimer {pos.get('option_type', pos['position_type'])} ({pos['ticker']})", key=f"del_{i}"):
-            st.session_state["portfolio"] = remove_position(st.session_state["portfolio"], i)
-            st.experimental_rerun = lambda: None  # pour éviter l'erreur Streamlit v1.24+
-            st.success("Position supprimée !")
+        if pos["position_type"] == "Stock":
+            name = f"Stock ({pos['ticker']})"
+        else:
+            name = f"{pos.get('option_type', pos['position_type'])} {i}"
+
+        if st.button(f"Supprimer {name}", key=f"del_{i}"):
+            to_delete = i
+
+    if to_delete is not None:
+        removed = st.session_state["portfolio"][to_delete]
+        # Réassigner la liste pour que Streamlit détecte le changement
+        st.session_state["portfolio"] = [
+            p for j, p in enumerate(st.session_state["portfolio"]) if j != to_delete
+        ]
+        st.warning(
+            f"Voulez-vous vraiment supprimer le {removed.get('option_type', removed['position_type'])} "
+            f"{removed['ticker']}  ? - Cliquez à nouveau pour confirmer"
+        )
+        st.stop()  # arrête le script ici et relance automatiquement avec l'état mis à jour

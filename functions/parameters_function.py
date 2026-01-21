@@ -60,7 +60,7 @@ class PayoffCalculator:
         K = params.K
         S_range = np.linspace(0.5*S0, 1.5*S0, 120)
 
-        if params.option_class == "Vanille":
+        if params.option_class == "Vanilla":
             payoff = PayoffCalculator.vanilla_payoff(S_range, K, params.option_type)
 
         elif params.option_type == "Asian":
@@ -69,7 +69,7 @@ class PayoffCalculator:
         elif params.option_type == "Lookback":
             payoff = PayoffCalculator.lookback_payoff(S_range, K, params.option_type)
 
-        if params.buy_sell == "Sell":
+        if params.buy_sell == "Short":
             payoff = -payoff
 
         return S_range, payoff

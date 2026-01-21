@@ -17,12 +17,12 @@ class Greeks_BS:
 
     def delta(self):
         if self.option_type == 'Call':
-            if self.buy_sell == "Buy":
+            if self.buy_sell == "Long":
                 return norm.cdf(self.d1)
             else:
                 return - norm.cdf(self.d1)
         else:
-            if self.buy_sell == 'Buy':
+            if self.buy_sell == 'Long':
                 return norm.cdf(self.d1) - 1
             else:
                 return 1 - norm.cdf(self.d1)

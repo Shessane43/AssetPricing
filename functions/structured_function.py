@@ -9,7 +9,7 @@ def straddle_price(S, K, T, r, q, sigma):
     call_params = {
         "S": S, "K": K, "T": T, "r": r, "q": q,
         "sigma": sigma, "option_type": "Call",
-        "buy_sell": "Buy", "option_class": "Vanille"
+        "buy_sell": "Long", "option_class": "Vanilla"
     }
     put_params = call_params.copy()
     put_params["option_type"] = "Put"
@@ -26,12 +26,12 @@ def strangle_price(S, K_put, K_call, T, r, q, sigma_put, sigma_call):
     call_params = {
         "S": S, "K": K_call, "T": T, "r": r, "q": q,
         "sigma": sigma_call, "option_type": "Call",
-        "buy_sell": "Buy", "option_class": "Vanille"
+        "buy_sell": "Long", "option_class": "Vanilla"
     }
     put_params = {
         "S": S, "K": K_put, "T": T, "r": r, "q": q,
         "sigma": sigma_put, "option_type": "Put",
-        "buy_sell": "Buy", "option_class": "Vanille"
+        "buy_sell": "Long", "option_class": "Vanilla"
     }
 
     call_price = price_option("Black-Scholes", call_params)
@@ -46,12 +46,12 @@ def bull_spread_price(S, K_low, K_high, T, r, q, sigma):
     long_call = price_option("Black-Scholes", {
         "S": S, "K": K_low, "T": T, "r": r, "q": q,
         "sigma": sigma, "option_type": "Call",
-        "buy_sell": "Buy", "option_class": "Vanille"
+        "buy_sell": "Long", "option_class": "Vanilla"
     })
     short_call = price_option("Black-Scholes", {
         "S": S, "K": K_high, "T": T, "r": r, "q": q,
         "sigma": sigma, "option_type": "Call",
-        "buy_sell": "Sell", "option_class": "Vanille"
+        "buy_sell": "Short", "option_class": "Vanilla"
     })
     return long_call + short_call
 
@@ -63,12 +63,12 @@ def bear_spread_price(S, K_high, K_low, T, r, q, sigma):
     long_put = price_option("Black-Scholes", {
         "S": S, "K": K_high, "T": T, "r": r, "q": q,
         "sigma": sigma, "option_type": "Put",
-        "buy_sell": "Buy", "option_class": "Vanille"
+        "buy_sell": "Long", "option_class": "Vanilla"
     })
     short_put = price_option("Black-Scholes", {
         "S": S, "K": K_low, "T": T, "r": r, "q": q,
         "sigma": sigma, "option_type": "Put",
-        "buy_sell": "Sell", "option_class": "Vanille"
+        "buy_sell": "Short", "option_class": "Vanilla"
     })
     return long_put + short_put
 
@@ -79,13 +79,13 @@ def butterfly_spread_price(S, K_low, K_mid, K_high, T, r, q, sigma):
     """
     long_low = price_option("Black-Scholes", {"S": S, "K": K_low, "T": T, "r": r, "q": q,
                                               "sigma": sigma, "option_type": "Call",
-                                              "buy_sell": "Buy", "option_class": "Vanille"})
+                                              "buy_sell": "Long", "option_class": "Vanilla"})
     short_mid = 2 * price_option("Black-Scholes", {"S": S, "K": K_mid, "T": T, "r": r, "q": q,
                                                    "sigma": sigma, "option_type": "Call",
-                                                   "buy_sell": "Sell", "option_class": "Vanille"})
+                                                   "buy_sell": "Short", "option_class": "Vanilla"})
     long_high = price_option("Black-Scholes", {"S": S, "K": K_high, "T": T, "r": r, "q": q,
                                                "sigma": sigma, "option_type": "Call",
-                                               "buy_sell": "Buy", "option_class": "Vanille"})
+                                               "buy_sell": "Long", "option_class": "Vanilla"})
     return long_low + long_high + short_mid
 
 def collar_price(S, K_put, K_call, T, r, q, sigma_put, sigma_call):
@@ -94,10 +94,10 @@ def collar_price(S, K_put, K_call, T, r, q, sigma_put, sigma_call):
     """
     long_put = price_option("Black-Scholes", {"S": S, "K": K_put, "T": T, "r": r, "q": q,
                                               "sigma": sigma_put, "option_type": "Put",
-                                              "buy_sell": "Buy", "option_class": "Vanille"})
+                                              "buy_sell": "Long", "option_class": "Vanilla"})
     short_call = price_option("Black-Scholes", {"S": S, "K": K_call, "T": T, "r": r, "q": q,
                                                 "sigma": sigma_call, "option_type": "Call",
-                                                "buy_sell": "Sell", "option_class": "Vanille"})
+                                                "buy_sell": "Short", "option_class": "Vanilla"})
     return long_put + short_call
 
 def plot_structured_payoff(products, S0, S_range=None):

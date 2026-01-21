@@ -3,11 +3,13 @@ from functions.pricing_function import price_option, MODELS
 
 def app():
 
-    if not all(k in st.session_state for k in [
+    # Check if all required parameters exist in session_state
+    required_keys = [
         "S", "K", "r", "sigma", "T", "q", "option_type", 
         "option_class", "buy_sell"
-    ]):
-        st.error("Paramètres manquants. Retournez à l'accueil.")
+    ]
+    if not all(k in st.session_state for k in required_keys):
+        st.error("Missing parameters. Please return to the home page.")
         return
 
     ticker = st.session_state.get("ticker")
@@ -19,38 +21,38 @@ def app():
     q = st.session_state.get("q")
     option_type = st.session_state.get("option_type")
 
-    with st.container(border=True):
+    with st.container():
         st.markdown(
             f"""
-            **Ticker** : **{ticker}**
+            **Ticker**: **{ticker}**
 
-            **Spot (S)** : {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
-            **Strike (K)** : {K:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
-            **Maturité (T)** : {T} an(s)
+            **Spot (S)**: {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Strike (K)**: {K:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Maturity (T)**: {T} year(s)
 
+            **Risk-free rate (r)**: {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Volatility (σ)**: {sigma:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Dividend (q)**: {q:.2%}
 
-            **Taux sans risque (r)** : {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
-            **Volatilité (σ)** : {sigma:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
-            **Dividendes (q)** : {q:.2%} 
-
-            **Type d'option** : **{option_type}**
+            **Option type**: **{option_type}**
             """
         )
 
-            
-    st.subheader("Choix du modèle")
-    model_name = st.selectbox("Modèle de pricing", list(MODELS.keys()))
+    st.subheader("Select Pricing Model")
+    model_name = st.selectbox("Pricing Model", list(MODELS.keys()))
     st.session_state["model_name"] = model_name
 
+    # Heston model parameters
     if model_name == "Heston":
-        st.subheader("Paramètres du modèle de Heston")
-        st.session_state.v0 = st.number_input("Volatilité initiale (v0)", value=0.04)
-        st.session_state.kappa = st.number_input("Retour à la moyenne (κ)", value=2.0)
-        st.session_state.theta = st.number_input("Vol long-terme (θ)", value=0.04)
-        st.session_state.sigma_v = st.number_input("Volatilité de la variance (σ_v)", value=0.3)
-        st.session_state.rho = st.number_input("Corrélation (ρ)", value=-0.5)
+        st.subheader("Heston Model Parameters")
+        st.session_state.v0 = st.number_input("Initial variance (v0)", value=0.04)
+        st.session_state.kappa = st.number_input("Mean reversion (κ)", value=2.0)
+        st.session_state.theta = st.number_input("Long-term variance (θ)", value=0.04)
+        st.session_state.sigma_v = st.number_input("Variance volatility (σ_v)", value=0.3)
+        st.session_state.rho = st.number_input("Correlation (ρ)", value=-0.5)
 
-    if st.button("Calculer le prix"):
+    # Compute price button
+    if st.button("Compute Price"):
         params = {
             "S": st.session_state["S"],
             "K": st.session_state["K"],
@@ -74,6 +76,6 @@ def app():
 
         try:
             price = price_option(model_name, params)
-            st.success(f"Prix ({model_name}) : **{price:.4f}**")
+            st.success(f"Price ({model_name}): **{price:.4f}**")
         except Exception as e:
-            st.error(f"Erreur : {e}")
+            st.error(f"Error: {e}")

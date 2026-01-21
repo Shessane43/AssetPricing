@@ -22,7 +22,7 @@ def add_position(portfolio, position):
             "sigma": pos.get("sigma",0.2),
             "q": pos.get("q",0.0),
             "option_type": pos.get("option_type","Call"),
-            "buy_sell": "Buy",  # prix payé = achat
+            "buy_sell": "Long",  # prix payé = achat
             "option_class": pos.get("option_class","Vanille")
         }
         model_name = pos.get("model_name", "Black-Scholes")
@@ -57,7 +57,7 @@ def calculate_prices_and_greeks(portfolio):
                 "sigma": pos.get("sigma",0.2),
                 "q": pos.get("q",0.0),
                 "option_type": pos.get("option_type","Call"),
-                "buy_sell": "Buy",
+                "buy_sell": "Long",
                 "option_class": pos.get("option_class","Vanille")
             }
             model_name = pos.get("model_name","Black-Scholes")
@@ -92,7 +92,7 @@ def calculate_portfolio_greeks(portfolio):
                     T=pos["T"],
                     r=pos["r"],
                     sigma=pos.get("sigma",0.2),
-                    buy_sell="Buy" if qty>0 else "Sell"
+                    buy_sell="Long" if qty>0 else "Short"
                 )
                 total_delta += g.delta() * qty
                 total_gamma += g.gamma() * qty

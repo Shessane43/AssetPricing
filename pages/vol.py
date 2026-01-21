@@ -10,7 +10,7 @@ from functions.vol_function import (
 
 def app():
 
-    # ---------- 1. Récupérer les paramètres depuis la session ----------
+    # ---------- 1. Fetch parameters from session ----------
     ticker = st.session_state.get("ticker")
     S = st.session_state.get("S")
     K = st.session_state.get("K")
@@ -19,41 +19,43 @@ def app():
     q = st.session_state.get("q")
     option_type = st.session_state.get("option_type")
 
-    with st.container(border=True):
+    with st.container():
         st.markdown(
             f"""
-            **Ticker** : **{ticker}**
+            **Ticker**: **{ticker}**
 
-            **Spot (S)** : {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
-            **Strike (K)** : {K:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
-            **Maturité (T)** : {T} an(s)
+            **Spot (S)**: {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Strike (K)**: {K:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Maturity (T)**: {T} year(s)
 
-            **Taux sans risque (r)** : {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
-            **Dividendes (q)** : {q:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
-            **Type d'option** : **{option_type}**
+            **Risk-free rate (r)**: {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Dividend (q)**: {q:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Option type**: **{option_type}**
             """
         )
 
+    # Fetch market prices
     market_prices_calls, market_prices_puts, maturity = get_market_prices_yahoo(ticker, T_days=int(T*365))
     if not market_prices_calls and not market_prices_puts:
-        st.error("Impossible de récupérer les prix de marché pour ce ticker/maturité. Vérifiez le ticker ou la connexion.")
+        st.error("Unable to fetch market prices for this ticker/maturity. Check the ticker or your connection.")
         return
 
-    # ici c'est important de prendre la maturité du vraie produit trouvé sur le marché
+    # It's important to take the maturity of the actual market product
     strikes, vols = generate_vol_curve(S, maturity, r, q, market_prices_calls, market_prices_puts, option_type)
 
+    # Plot the implied volatility curve
     fig = plot_vol_curve(
         strikes,
         vols,
         maturity=maturity,
         K=K,
     )
-    st.subheader("Courbe de volatilité implicite")
+    st.subheader("Implied Volatility Curve")
     st.pyplot(fig)
 
-    all_matu = get_all_option_maturities(ticker)
-    vol_curves = generate_vol_curves_multiple_maturities(S, all_matu, r, q, option_type, ticker)
+    # Plot the implied volatility surface
+    all_maturities = get_all_option_maturities(ticker)
+    vol_curves = generate_vol_curves_multiple_maturities(S, all_maturities, r, q, option_type, ticker)
     fig_3d = plot_vol_surface(vol_curves)
-    st.subheader("Surface de volatilité implicite")
-
-    st.plotly_chart(fig_3d, width='stretch')
+    st.subheader("Implied Volatility Surface")
+    st.plotly_chart(fig_3d, use_container_width=True)

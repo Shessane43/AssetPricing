@@ -1,58 +1,71 @@
 import streamlit as st
-import numpy as np
-from functions.accueil_function import (
-    ALL_TICKERS,
-    MarketDataFetcher,
-    OptionParameters,
-    PayoffCalculator,
-    PayoffPlotter
-)
 
 def app():
-
-    st.subheader("Bienvenue dans l'application")
-
-    st.write("Choisissez le ticker, les paramètres, puis visualisez le payoff.")
-
-    st.session_state.ticker = st.selectbox("Sélectionnez l'action", ALL_TICKERS)
-
-    last_price = MarketDataFetcher.get_last_price(st.session_state.ticker)
-    st.session_state["S"]= last_price
-    st.info(f"Prix actuel de {st.session_state.ticker} : {last_price:.2f} $")
-
-    st.session_state["buy_sell"] = st.selectbox("Position", ["Buy", "Sell"])
-
-    st.session_state["option_class"] = st.selectbox("Classe d’option", ["Vanille", "Exotique"])
-
-    if st.session_state.option_class == "Vanille":
-        st.session_state["option_type"] = st.selectbox("Type d’option", ["Call", "Put"])
-    else:
-        st.session_state["option_type"] = st.selectbox("Type exotique", ["Asian", "Lookback"])
-
-    st.session_state["K"] = st.number_input("Strike (K)", value=last_price)
-    st.session_state["T"] = st.number_input("Maturité (T années)", value=1.0)
-    st.session_state["r"] = st.number_input("Taux sans risque (r)", value=0.02)
-    st.session_state["sigma"] = st.number_input("Volatilité (σ)", value=0.2)
-    st.session_state["q"]= st.number_input("Dividende (q)", value=0.0)
-
-    params = OptionParameters(
-        ticker=st.session_state["ticker"],
-        S=st.session_state["S"],
-        K=st.session_state["K"],
-        T=st.session_state["T"],
-        r=st.session_state["r"],
-        sigma=st.session_state["sigma"],
-        q=st.session_state["q"],
-        option_class=st.session_state["option_class"],
-        option_type=st.session_state["option_type"],
-        buy_sell=st.session_state["buy_sell"])
-    
-    S_range, payoff = PayoffCalculator.choose_payoff(params)
-    fig = PayoffPlotter.plot(
-        S_range,
-        payoff,
-        st.session_state.K,
-        f"{st.session_state.buy_sell} {st.session_state.option_type}"
+    st.markdown(
+        """
+        <style>
+        .title {
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 0px; /* reduced space under the title */
+            margin-top: 5px;    /* space above the title */
+        }
+        hr {
+            margin-top: 5px;    /* reduced space between title and line */
+            margin-bottom: 10px; /* space below the line before the cards */
+        }
+        .subtitle {
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .card {
+            background-color: #FF6600;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 4px 4px 15px rgba(0,0,0,0.15);
+            margin: 5px 0px;
+        }
+        .card p {
+            color: white;
+            margin: 0px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
     )
 
-    st.pyplot(fig)
+    # Main title
+    st.markdown('<h1 class="title">Welcome to the Asset Pricing App</h1>', unsafe_allow_html=True)
+    
+    # Horizontal line with reduced space
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    # Feature columns
+    col1, col2, col3 = st.columns(3, gap="small")
+
+    with col1:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<h3 class="subtitle">Option Simulation</h3>', unsafe_allow_html=True)
+        st.markdown('<p>Select a ticker, set the option parameters, and visualize the payoff.</p>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col2:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<h3 class="subtitle">Market Analysis</h3>', unsafe_allow_html=True)
+        st.markdown('<p>Access market data, stock prices, greeks, and implied volatility.</p>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col3:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<h3 class="subtitle">Portfolio</h3>', unsafe_allow_html=True)
+        st.markdown('<p>Add your positions and track total value and associated risks.</p>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    # Footer or instructions
+    st.info("Select a page from the navigation menu to get started.")
