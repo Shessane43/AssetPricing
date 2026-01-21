@@ -22,7 +22,7 @@ def add_position(portfolio, position):
             "sigma": pos.get("sigma",0.2),
             "q": pos.get("q",0.0),
             "option_type": pos.get("option_type","Call"),
-            "buy_sell": "Long",  # prix payé = achat
+            "buy_sell": "Buy",  # prix payé = achat
             "option_class": pos.get("option_class","Vanille")
         }
         model_name = pos.get("model_name", "Black-Scholes")
@@ -57,7 +57,7 @@ def calculate_prices_and_greeks(portfolio):
                 "sigma": pos.get("sigma",0.2),
                 "q": pos.get("q",0.0),
                 "option_type": pos.get("option_type","Call"),
-                "buy_sell": "Long",
+                "buy_sell": "Buy",
                 "option_class": pos.get("option_class","Vanille")
             }
             model_name = pos.get("model_name","Black-Scholes")
@@ -113,7 +113,26 @@ def calculate_portfolio_greeks(portfolio):
 # ----------------- Coût total -----------------
 def calculate_portfolio_value(portfolio):
     """
-    Retourne uniquement le coût total payé (price_paid)
+    Retourne :
+        - market_value : valeur actuelle du portfolio
+        - cost : coût total payé à l'achat
     """
-    cost = sum(pos.get("price_paid",0) for pos in portfolio)
-    return None, cost
+    total_market_value = 0.0
+    total_cost = 0.0
+
+    for pos in portfolio:
+        qty = pos.get("qty", 1)
+
+        # Stock
+        if pos.get("position_type", "Option") == "Stock":
+            price = pos.get("S", 0)  # prix actuel du stock
+            cost = pos.get("price_paid", price)
+        else:
+            price = pos.get("price", 0)  # prix actuel de l'option
+            cost = pos.get("price_paid", 0)
+
+        total_market_value += price * qty
+        total_cost += cost
+
+    return total_market_value, total_cost
+

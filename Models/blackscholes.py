@@ -18,9 +18,9 @@ class BlackScholes(Model):
         self.option_class = option_class.lower()  # "vanille" ou "exotique"
      
     def price(self):
-        if self.option_class != "vanille":
-            raise Exception("Black-Scholes ne s'applique qu’aux options vanilles européennes.")
-            
+        if self.option_class != "vanilla":
+            raise Exception("Black-Scholes applies only to European vanilla options.")
+
              
 
         d1 = (np.log(self.S / self.K) + (self.r - self.q + 0.5 * self.sigma**2) * self.T) / (self.sigma * np.sqrt(self.T))
