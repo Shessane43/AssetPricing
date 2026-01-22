@@ -7,15 +7,29 @@ from functions.structured_function import (
 def app():
 
     # --- Basic parameters ---
-    required_keys = ["S", "r", "q", "T"]
+    required_keys = ["ticker","S", "r", "q", "T"]
     if not all(k in st.session_state for k in required_keys):
         st.error("Missing parameters. Please return to the home page.")
         return
 
+    ticker = st.session_state.get("ticker")
     S = st.session_state["S"]
     r = st.session_state["r"]
     q = st.session_state["q"]
     T = st.session_state["T"]
+
+    with st.container():
+        st.markdown(
+            f"""
+            **Ticker**: **{ticker}**
+
+            **Spot (S)**: {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Maturity (T)**: {T} year(s)
+
+            **Risk-free rate (r)**: {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Dividend (q)**: {q:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+            """
+        )
 
     # --- Structured product selection ---
     st.subheader("Select the type of structured product")

@@ -22,7 +22,7 @@ def add_position(portfolio, position):
             "sigma": pos.get("sigma",0.2),
             "q": pos.get("q",0.0),
             "option_type": pos.get("option_type","Call"),
-            "buy_sell": "Buy",  # prix payé = achat
+            "buy_sell": "Long",  # prix payé = achat
             "option_class": pos.get("option_class","Vanille")
         }
         model_name = pos.get("model_name", "Black-Scholes")
@@ -42,32 +42,70 @@ def remove_position(portfolio, index):
 # ----------------- Prix par position -----------------
 def calculate_prices_and_greeks(portfolio):
     results = []
+
     for pos in portfolio:
         res = pos.copy()
-        qty = pos.get("qty",1)
+        qty = pos.get("qty", 1)
 
-        if pos.get("position_type","Option") == "Stock":
+        # =====================
+        # POSITION LONG / SHORT
+        # =====================
+        res["position_type"] = "Long" if qty > 0 else "Short"
+
+        # =====================
+        # OPTION TYPE / STOCK
+        # =====================
+        if pos.get("position_type") == "Stock":
+            res["option_type"] = "Stock"
             res["price"] = pos["S"] * qty
         else:
+            res["option_type"] = pos.get("option_type", "Call")
+
             params = {
                 "S": pos["S"],
                 "K": pos["K"],
                 "T": pos["T"],
                 "r": pos["r"],
-                "sigma": pos.get("sigma",0.2),
-                "q": pos.get("q",0.0),
-                "option_type": pos.get("option_type","Call"),
-                "buy_sell": "Buy",
-                "option_class": pos.get("option_class","Vanille")
+                "sigma": pos.get("sigma", 0.2),
+                "q": pos.get("q", 0.0),
+                "option_type": pos.get("option_type", "Call"),
+                "buy_sell": "Long",
+                "option_class": pos.get("option_class", "Vanilla")
             }
-            model_name = pos.get("model_name","Black-Scholes")
+
+            model_name = pos.get("model_name", "Black-Scholes")
             try:
                 res["price"] = price_option(model_name, params) * qty
             except Exception:
-                res["price"] = 0
+                res["price"] = 0.0
 
         results.append(res)
-    return pd.DataFrame(results)
+
+    # Transformer en DataFrame
+    df = pd.DataFrame(results)
+
+    # Réordonner les colonnes : position_type et option_type au début
+    cols = ["position_type", "option_type"] + [c for c in df.columns if c not in ["position_type", "option_type"]]
+    df = df[cols]
+
+    # Renommer les colonnes pour affichage plus propre
+    rename_dict = {
+        "position_type": "Position",
+        "option_type": "Type",
+        "ticker": "Ticker",
+        "S": "Spot",
+        "K": "Strike",
+        "T": "Maturity",
+        "sigma": "Volatility",
+        "price": "Price",
+        "qty": "Quantity",
+        "q": "Dividend"
+    }
+    df.rename(columns=rename_dict, inplace=True)
+
+    return df
+
+
 
 # ----------------- Greeks globaux -----------------
 def calculate_portfolio_greeks(portfolio):
@@ -135,4 +173,3 @@ def calculate_portfolio_value(portfolio):
         total_cost += cost
 
     return total_market_value, total_cost
-
