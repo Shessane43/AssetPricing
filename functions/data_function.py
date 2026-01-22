@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 class MarketData:
-    """Gestion de la récupération & visualisation des données de marché."""
+    """Handles market data retrieval & visualization."""
 
     def __init__(self, ticker: str):
         self.ticker = ticker
 
     def fetch(self, period="1y"):
-        """Télécharge l'historique des prix via Yahoo Finance."""
+        """Downloads historical price data via Yahoo Finance."""
         try:
             data = yf.Ticker(self.ticker).history(period=period)
         except:
@@ -18,9 +18,9 @@ class MarketData:
 
     @staticmethod
     def plot_close_price(data):
-        """Affichage stylisé du prix de clôture."""
+        """Stylized plot of the closing price."""
         if data is None or data.empty:
-            st.warning("Impossible d'afficher le graphique : aucune donnée.")
+            st.warning("Cannot display plot: no data available.")
             return
 
         fig, ax = plt.subplots(figsize=(10, 5))
@@ -34,7 +34,7 @@ class MarketData:
 
         ax.tick_params(colors="orange")
         ax.set_xlabel("Date", color="orange")
-        ax.set_ylabel("Prix ($)", color="orange")
+        ax.set_ylabel("Price ($)", color="orange")
         ax.grid(True, linestyle="--", color="orange", alpha=0.3)
 
         legend = ax.legend(facecolor="black", edgecolor="orange")
@@ -45,23 +45,23 @@ class MarketData:
 
 
 def show_data_page():
-    """Interface affichée dans l’onglet Data."""
+    """Interface displayed in the Data tab."""
 
     if "ticker" not in st.session_state:
-        st.info("Veuillez d'abord sélectionner un ticker dans l'onglet Accueil.")
+        st.error("Missing parameters. Please return to the Parameters page.")
         return
 
     ticker = st.session_state.ticker
-    st.subheader(f"Données pour {ticker}")
+    st.subheader(f"Data for {ticker}")
 
-    #stocke la période sélectionnée
+    # Store the selected period
     st.session_state.period = st.selectbox(
-        "Période des données",
+        "Data period",
         ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "max"],
         index=3
     )
 
-    # si pas déjà téléchargées ou si période a changé, on télécharge
+    # If not already downloaded or period changed, fetch data
     if ("market_data" not in st.session_state 
         or st.session_state.market_data is None 
         or st.session_state.market_data_period != st.session_state.period):
@@ -73,11 +73,11 @@ def show_data_page():
     data = st.session_state.market_data
 
     if data is None or data.empty:
-        st.warning("Aucune donnée disponible pour ce ticker.")
+        st.warning("No data available for this ticker.")
         return
 
-    st.subheader("Aperçu des données")
+    st.subheader("Data Preview")
     st.dataframe(data.head())
 
-    st.subheader("Graphique du prix de clôture")
+    st.subheader("Closing Price Chart")
     MarketData.plot_close_price(data)

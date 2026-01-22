@@ -30,6 +30,7 @@ def app():
     else:
         st.session_state["option_type"] = st.selectbox("Exotic type", ["Asian", "Lookback"])
 
+# Initialisation de K une seule fois
     if "K" not in st.session_state:
         st.session_state["K"] = last_price
 
