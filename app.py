@@ -16,7 +16,7 @@ page = st.selectbox(
         "Data",
         "Pricing",
         "Greeks",
-        "Implied Volatility",
+        "Implied Volatility Surface",
         "Bond, Swap & Futures",
         "Structured Products",
         "My Portfolio"
