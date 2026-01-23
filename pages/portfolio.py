@@ -129,6 +129,25 @@ def app():
     greeks = calculate_portfolio_greeks(st.session_state["portfolio"])
     st.table(greeks)
 
+    st.subheader("Delta Hedging")
+
+    hedge_ticker = st.selectbox(
+        "Underlying used for hedging",
+        list({p["ticker"] for p in st.session_state["portfolio"]}),
+        key="hedge_ticker"
+    )
+
+    if st.button("⚖️ Delta Hedge Portfolio"):
+        from functions.portfolio_function import delta_hedge_portfolio
+
+        st.session_state["portfolio"] = delta_hedge_portfolio(
+            st.session_state["portfolio"],
+            hedge_ticker
+        )
+        st.success("Portfolio delta-hedged")
+        st.rerun()
+
+
     # =========================
     # Remove positions
     # =========================

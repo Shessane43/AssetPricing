@@ -173,3 +173,28 @@ def calculate_portfolio_value(portfolio):
         total_cost += cost
 
     return total_market_value, total_cost
+
+def delta_hedge_portfolio(portfolio, ticker):
+    """
+    Ajoute une position en stock pour rendre le delta total ~ 0
+    """
+    greeks = calculate_portfolio_greeks(portfolio)
+    total_delta = greeks.loc[0, "delta"]
+
+    # Si déjà presque delta-neutre, on ne fait rien
+    if abs(total_delta) < 1e-4:
+        return portfolio
+
+    hedge_position = {
+        "position_type": "Stock",
+        "ticker": ticker,
+        "S": next(
+            p["S"] for p in portfolio if p["ticker"] == ticker
+        ),
+        "qty": -total_delta
+    }
+
+    portfolio.append(hedge_position)
+    return portfolio
+
+
