@@ -101,7 +101,7 @@ def app():
     # =========================
     # Portfolio display
     # =========================
-    st.subheader("Current Portfolio (t=0)")
+    st.subheader("1 - Current Portfolio (T1)")
 
     if not st.session_state["portfolio"]:
         st.info("Portfolio is empty.")
@@ -160,7 +160,7 @@ def app():
     # =========================
 
     st.write("-------")
-    st.subheader("Scenario Analysis : Parameter Change (t=1)")
+    st.subheader("2 - Scenario Analysis : Parameter Change (T2)")
 
     portfolio_t2 = []
 
