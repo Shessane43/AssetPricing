@@ -34,7 +34,7 @@ elif page == "Pricing":
     pricing.app()
 elif page == "Greeks":
     greeks.app()
-elif page == "Implied Volatility":
+elif page == "Implied Volatility Surface":
     vol.app()
 elif page == "Bond, Swap & Futures":
     bond_swap_futures.app()

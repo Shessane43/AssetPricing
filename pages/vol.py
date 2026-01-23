@@ -10,6 +10,11 @@ from functions.vol_function import (
 
 def app():
 
+    required_keys = ["ticker","S", "K","r", "q", "T"]
+    if not all(k in st.session_state for k in required_keys):
+        st.error("Missing parameters. Please return to the Parameters page.")
+        return
+
     # ---------- 1. Fetch parameters from session ----------
     ticker = st.session_state.get("ticker")
     S = st.session_state.get("S")
@@ -24,8 +29,8 @@ def app():
             f"""
             **Ticker**: **{ticker}**
 
-            **Spot (S)**: {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
-            **Strike (K)**: {K:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Spot (S)**: {S:.2f} &nbsp;&nbsp;|&nbsp;&nbsp;
+            **Strike (K)**: {K:.2f} &nbsp;&nbsp;|&nbsp;&nbsp;
             **Maturity (T)**: {T} year(s)
 
             **Risk-free rate (r)**: {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
