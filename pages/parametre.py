@@ -15,7 +15,15 @@ def app():
         "These parameters will be used for pricing, Greeks, and the volatility surface."
     )
 
-    st.session_state.ticker = st.selectbox("Select a stock", ALL_TICKERS)
+    if "ticker" not in st.session_state:
+        st.session_state.ticker = "AAPL"
+
+    st.selectbox(
+        "Select a stock",
+        ALL_TICKERS,
+        index=ALL_TICKERS.index(st.session_state.ticker),
+        key="ticker"
+    )
 
     last_price = MarketDataFetcher.get_last_price(st.session_state.ticker)
     st.session_state["S"] = last_price

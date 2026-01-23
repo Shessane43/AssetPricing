@@ -9,7 +9,7 @@ def app():
         "option_class", "buy_sell"
     ]
     if not all(k in st.session_state for k in required_keys):
-        st.error("Missing parameters. Please return to the home page.")
+        st.error("Missing parameters. Please return to the Parameters page.")
         return
 
     ticker = st.session_state.get("ticker")
