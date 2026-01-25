@@ -1,113 +1,213 @@
 import numpy as np
 from numpy.polynomial.laguerre import laggauss
-from scipy.stats import norm
-from scipy.optimize import minimize
+from scipy.optimize import minimize, brentq
+
 from Models.models import Model
 from Models.blackscholes import BlackScholes
 
+
 class HestonModel(Model):
-    def __init__(self, S, K, r, T, q, option_type, buy_sell, option_class, v0, kappa, theta, sigma_v, rho):
-        self.S = S
-        self.K = K
-        self.r = r
-        self.T = T
+    """
+    Modèle de Heston (1993)
+
+    dS_t/S_t = (r - q) dt + sqrt(v_t) dW1_t
+    dv_t     = kappa (theta - v_t) dt + sigma_v sqrt(v_t) dW2_t
+    Corr(dW1, dW2) = rho
+    """
+
+    def __init__(
+        self,
+        S, K, r, T, q,
+        option_type="call",
+        position="buy",
+        option_class="vanilla",
+        v0=0.04,
+        kappa=1.5,
+        theta=0.04,
+        sigma_v=0.3,
+        rho=-0.7
+    ):
+        super().__init__(S, K, r, T, option_type, position, option_class)
+
         self.q = q
-        self.option_type = option_type.lower()
-        self.buy_sell = buy_sell.lower()
-        self.option_class = option_class.lower()
         self.v0 = v0
         self.kappa = kappa
         self.theta = theta
         self.sigma_v = sigma_v
         self.rho = rho
+        self.option_type = option_type.lower()
+        self.option_class = option_class.lower()
+    def _sign(self):
+        return -1.0 if self.position == "sell" else 1.0
 
-    def char_func(self, u):
-        r_adj = self.r - self.q
+    def _r_adj(self):
+        return self.r - self.q
+
+    def _char_func(self, u, j):
+    
+        u = np.asarray(u, dtype=np.complex128)
+        i = 1j
+        tau = self.T
+        x0 = np.log(self.S)
+
+        u_j = 0.5 if j == 1 else -0.5
+        b_j = (self.kappa - self.rho * self.sigma_v) if j == 1 else self.kappa
+
         a = self.kappa * self.theta
-        b = self.kappa
         sigma = self.sigma_v
-        d = np.sqrt((self.rho * sigma * 1j * u - b)**2 + sigma**2 * (1j*u + u**2))
-        g = (b - self.rho * sigma * 1j * u - d) / (b - self.rho * sigma * 1j * u + d)
-        C = r_adj * 1j * u * self.T + (a/sigma**2) * ((b - self.rho * sigma * 1j * u - d)*self.T - 2*np.log((1 - g*np.exp(-d*self.T))/(1 - g)))
-        D = (b - self.rho * sigma * 1j * u - d) * (1 - np.exp(-d*self.T)) / (sigma**2 * (1 - g*np.exp(-d*self.T)))
-        return np.exp(C + D*self.v0 + 1j*u*np.log(self.S))
+        rho = self.rho
 
-    def price(self, n=64):
-        if self.option_class != "vanille":
-            return self.price_mc()
+        # sqrt en complexe garanti
+        d = np.sqrt((rho * sigma * i * u - b_j) ** 2 - sigma**2 * (2 * u_j * i * u - u**2) + 0j)
+
+        # "trap-safe" g (important)
+        g = (b_j - rho * sigma * i * u - d) / (b_j - rho * sigma * i * u + d)
+
+        exp_dt = np.exp(-d * tau)
+
+        # eps pour éviter divisions par ~0
+        eps = 1e-14 + 0j
+        one_minus_g = 1.0 - g
+        one_minus_gexp = 1.0 - g * exp_dt
+
+        # log en complexe (et stable)
+        log_term = np.log((one_minus_gexp + eps) / (one_minus_g + eps))
+
+        C = self._r_adj() * i * u * tau + (a / sigma**2) * ((b_j - rho * sigma * i * u - d) * tau - 2.0 * log_term)
+        D = (b_j - rho * sigma * i * u - d) * ((1.0 - exp_dt) / (sigma**2 * (one_minus_gexp + eps)))
+
+        return np.exp(C + D * self.v0 + i * u * x0)
+
+    
+    def _Pj(self, j, n=64):
         x, w = laggauss(n)
-        integrand = np.exp(-x) * np.real(np.exp(-1j*x*np.log(self.K)) * self.char_func(x - 1j) / (1j * x))
-        call_price = np.exp(-self.r * self.T) * np.sum(w * integrand) / np.pi
-        price = call_price if self.option_type == "call" else call_price - self.S + self.K * np.exp(-self.r * self.T)
-        return -price if self.buy_sell == "sell" else price
+        i = 1j
+        lnK = np.log(self.K)
 
-    def simulate_paths(self, n_paths=10000, n_steps=200):
+        u = (x + 1e-6).astype(np.complex128)  
+        phi = self._char_func(u, j)
+
+        integrand = np.real(np.exp(-i * u * lnK) * phi / (i * u))
+
+        integrand = np.nan_to_num(integrand, nan=0.0, posinf=0.0, neginf=0.0)
+
+        val = np.sum(w * np.exp(x) * integrand)
+        return 0.5 + val / np.pi
+    
+    def price_closed_form(self, n=64):
+        P1 = self._Pj(1, n)
+        P2 = self._Pj(2, n)
+        if not np.isfinite(P1) or not np.isfinite(P2):
+            return self.price_mc(n_paths=200_000, n_steps=300)
+
+        disc_r = np.exp(-self.r * self.T)
+        disc_q = np.exp(-self.q * self.T)
+
+        call = self.S * disc_q * P1 - self.K * disc_r * P2
+
+        if self.option_type == "call":
+            price = call
+        else:
+            price = call - self.S * disc_q + self.K * disc_r
+
+        return self._sign() * price
+
+    def simulate_paths(self, n_paths=50_000, n_steps=200, seed=None):
+        rng = np.random.default_rng(seed)
         dt = self.T / n_steps
+        sqrt_dt = np.sqrt(dt)
+
         S = np.zeros((n_paths, n_steps + 1))
         v = np.zeros((n_paths, n_steps + 1))
 
         S[:, 0] = self.S
-        v[:, 0] = max(self.v0, 1e-8)
+        v[:, 0] = max(self.v0, 0.0)
 
         for t in range(1, n_steps + 1):
-            Z1 = np.random.normal(size=n_paths)
-            Z2 = np.random.normal(size=n_paths)
-            W1 = np.sqrt(dt) * Z1
-            W2 = np.sqrt(dt) * (self.rho * Z1 + np.sqrt(1 - self.rho ** 2) * Z2)
+            Z1 = rng.standard_normal(n_paths)
+            Z2 = rng.standard_normal(n_paths)
+
+            dW1 = sqrt_dt * Z1
+            dW2 = sqrt_dt * (self.rho * Z1 + np.sqrt(1 - self.rho**2) * Z2)
+
+            v_pos = np.maximum(v[:, t - 1], 0.0)
 
             v[:, t] = np.maximum(
-                v[:, t - 1] + self.kappa * (self.theta - v[:, t - 1]) * dt +
-                self.sigma_v * np.sqrt(v[:, t - 1]) * W2,
-                1e-8
+                v[:, t - 1]
+                + self.kappa * (self.theta - v_pos) * dt
+                + self.sigma_v * np.sqrt(v_pos) * dW2,
+                0.0
             )
 
             S[:, t] = S[:, t - 1] * np.exp(
-                (self.r - 0.5 * v[:, t - 1]) * dt + np.sqrt(v[:, t - 1]) * W1
+                (self.r - self.q - 0.5 * v_pos) * dt
+                + np.sqrt(v_pos) * dW1
             )
 
         return S, v
 
-    def price_mc(self, n_paths=10000, n_steps=200):
+    def price_mc(self, n_paths=50_000, n_steps=200):
         S, _ = self.simulate_paths(n_paths, n_steps)
-        payoff = np.maximum(S[:, -1] - self.K, 0) if self.option_type == "call" else np.maximum(self.K - S[:, -1], 0)
-        price = np.exp(-self.r * self.T) * np.mean(payoff)
-        return -price if self.position == "sell" else price
-    def implied_volatility(self, market_price, tol=1e-6, max_iter=100):
-        sigma = self.lewis_approx_vol()  # initial guess
+        ST = S[:, -1]
 
-        for _ in range(max_iter):
-            bs = BlackScholes(self.S, self.K, self.r, sigma, self.T, self.option_type)
-            price_est = bs.price()
+        if self.option_type == "call":
+            payoff = np.maximum(ST - self.K, 0)
+        else:
+            payoff = np.maximum(self.K - ST, 0)
 
-            d1 = (np.log(self.S / self.K) + (self.r + 0.5 * sigma**2) * self.T) / (sigma * np.sqrt(self.T))
-            vega = self.S * np.sqrt(self.T) * norm.pdf(d1)
+        price = np.exp(-self.r * self.T) * payoff.mean()
+        return self._sign() * price
 
-            if vega < 1e-8:
-                return None
+    def price(self, **kwargs):
+        if self.option_class != "vanilla":
+            return self.price_mc()
+        return self.price_closed_form()
 
-            sigma -= (price_est - market_price) / vega
-            if abs(price_est - market_price) < tol:
-                return sigma
+    # ---------------------------------------------------
+    # Implied volatility (BS)
+    # ---------------------------------------------------
+    def implied_volatility(self, market_price):
+        target = market_price * self._sign()
 
-        return None
+        def f(sig):
+            bs = BlackScholes(
+                self.S, self.K, self.r, sig, self.T, self.q,
+                self.option_type, "buy", "vanilla"
+            )
+            return bs.price() - target
 
-    def lewis_approx_vol(self):
-        return np.sqrt(self.theta + (self.v0 - self.theta) * np.exp(-self.kappa * self.T))
+        try:
+            return brentq(f, 1e-6, 5.0)
+        except ValueError:
+            return None
 
+    # ---------------------------------------------------
+    # Calibration
+    # ---------------------------------------------------
     @staticmethod
-    def calibrate(params, K_list, market_prices, initial_guess):
-        def objective(opt_params):
-            kappa, theta, sigma_v, rho, v0 = opt_params
-            model_prices = []
+    def calibrate(
+        S, r, T, q,
+        option_type, position,
+        K_list, market_prices,
+        initial_guess
+    ):
+        def objective(x):
+            v0, kappa, theta, sigma_v, rho = x
 
-            for K, P in zip(K_list, market_prices):
+            if min(x) <= 0 or abs(rho) >= 1:
+                return 1e8
+
+            model_prices = []
+            for K in K_list:
                 model = HestonModel(
-                    params=type(params)(params.S, K, params.T, params.r, params.option_type, params.position, params.option_class),
-                    v0=v0, kappa=kappa, theta=theta, sigma_v=sigma_v, rho=rho
+                    S, K, r, T, q,
+                    option_type, position, "vanilla",
+                    v0, kappa, theta, sigma_v, rho
                 )
                 model_prices.append(model.price())
 
-            return np.mean((np.array(model_prices) - np.array(market_prices)) ** 2)
+            err = np.array(model_prices) - np.array(market_prices)
+            return np.mean(err**2)
 
         res = minimize(objective, initial_guess, method="Nelder-Mead")
         return res.x

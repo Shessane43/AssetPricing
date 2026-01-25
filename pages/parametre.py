@@ -24,7 +24,6 @@ def app():
         index=ALL_TICKERS.index(st.session_state.ticker),
         key="ticker"
     )
-
     last_price = MarketDataFetcher.get_last_price(st.session_state.ticker)
     st.session_state["S"] = last_price
     st.info(f"Current price of {st.session_state.ticker}: ${last_price:.2f}")
