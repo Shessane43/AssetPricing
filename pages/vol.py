@@ -31,11 +31,13 @@ def app():
 
     st.title("Implied Volatility")
 
-    with st.sidebar:
-        model_choice = st.radio(
-            "Model",
-            ["Black-Scholes (Market IV)", "Heston (Model IV)"]
-        )
+    st.subheader("Model selection")
+
+    model_choice = st.radio(
+        "Model",
+        ["Black-Scholes (Market IV)", "Heston (Model IV)"],
+        horizontal=True
+    )
 
     maturities = get_all_option_maturities(ticker)
     if not maturities:

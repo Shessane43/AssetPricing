@@ -1,73 +1,63 @@
 from Models.heston import HestonModel
 
+
 class Greeks_Heston:
 
-    def __init__(self, S, K, r, T, v0, kappa, theta, sigma_v, rho, option_type, buy_sell=True):
-        self.S = S
-        self.K = K
-        self.T = T
-        self.r = r
+    def __init__(
+        self,
+        S, K, T, r,
+        v0, kappa, theta_v, sigma_v, rho_heston,
+        option_type="call",
+        position="buy",
+        q=0.0
+    ):
+        self.S = float(S)
+        self.K = float(K)
+        self.T = float(T)
+        self.r = float(r)
+        self.q = float(q)
 
-        # Paramètres Heston
-        self.kappa = kappa
-        self.theta = theta
-        self.sigma_v = sigma_v
-        self.rho = rho
-        self.v0 = v0
+        self.v0 = float(v0)
+        self.kappa = float(kappa)
+        self.theta_v = float(theta_v)
+        self.sigma_v = float(sigma_v)
+        self.rho_heston = float(rho_heston)
 
-        self.option_type = option_type
-        self.buy_sell = buy_sell
+        self.option_type = option_type.lower()
+        self.position = position.lower()
+
+    def _price(self, **kwargs):
+        return HestonModel(
+            S=kwargs.get("S", self.S),
+            K=self.K,
+            r=kwargs.get("r", self.r),
+            T=kwargs.get("T", self.T),
+            q=self.q,
+            option_type=self.option_type,
+            position=self.position,
+            option_class="vanilla",
+            v0=kwargs.get("v0", self.v0),
+            kappa=self.kappa,
+            theta=self.theta_v,
+            sigma_v=kwargs.get("sigma_v", self.sigma_v),
+            rho=kwargs.get("rho", self.rho_heston),
+        ).price()
 
     def delta(self, h=1e-4):
-        C_plus = HestonModel(self.S+h, self.K, self.r, self.T, self.v0,
-                             self.kappa, self.theta, self.sigma_v, self.rho, option_type=self.option_type).price()
-        C_minus = HestonModel(self.S-h, self.K, self.r, self.T, self.v0,
-                              self.kappa, self.theta, self.sigma_v, self.rho, option_type=self.option_type).price()
-        if self.buy_sell:
-            return (C_plus - C_minus) / (2*h)
-        else: 
-            return - (C_plus - C_minus) / (2*h)
+        return (self._price(S=self.S + h) - self._price(S=self.S - h)) / (2 * h)
 
     def gamma(self, h=1e-4):
-        C_plus = HestonModel(self.S+h, self.K, self.r, self.T, self.v0,
-                             self.kappa, self.theta, self.sigma_v, self.rho, option_type=self.option_type).price()
-        C_mid = HestonModel(self.S, self.K, self.r, self.T, self.v0,
-                            self.kappa, self.theta, self.sigma_v, self.rho, option_type=self.option_type).price()
-        C_minus = HestonModel(self.S-h, self.K, self.r, self.T, self.v0,
-                              self.kappa, self.theta, self.sigma_v, self.rho, option_type=self.option_type).price()
-        if self.buy_sell:    
-            return (C_plus - 2*C_mid + C_minus) / h**2
-        else:
-            return - (C_plus - 2*C_mid + C_minus) / h**2
+        return (
+            self._price(S=self.S + h)
+            - 2 * self._price()
+            + self._price(S=self.S - h)
+        ) / h**2
 
     def vega(self, h=1e-4):
-        C_minus = HestonModel(self.S, self.K, self.r, self.T, self.v0,
-                              self.kappa, self.theta, self.sigma_v - h, self.rho, option_type=self.option_type).price()
-        C_plus = HestonModel(self.S, self.K, self.r, self.T, self.v0,
-                             self.kappa, self.theta, self.sigma_v + h, self.rho, option_type=self.option_type).price()
-        if self.buy_sell:
-            return (C_plus - C_minus) / (2*h)
-        else:
-            return - (C_plus - C_minus) / (2*h)
+        return (self._price(v0=self.v0 + h) - self._price(v0=self.v0 - h)) / (2 * h)
 
     def theta(self, h=1e-4):
-        C_minus = HestonModel(self.S, self.K, self.r, self.T - h, self.v0,
-                              self.kappa, self.theta, self.sigma_v, self.rho, option_type=self.option_type).price()
-        C_plus = HestonModel(self.S, self.K, self.r, self.T + h, self.v0,
-                             self.kappa, self.theta, self.sigma_v, self.rho, option_type=self.option_type).price()
-        if self.buy_sell:
-            return - (C_plus - C_minus) / (2*h)
-        else:
-            return (C_plus - C_minus) / (2*h)
+        return -(self._price(T=self.T + h) - self._price(T=self.T - h)) / (2 * h)
 
     def rho(self, h=1e-4):
-        C_minus = Greeks_Heston(self.S, self.K, self.T, self.r - h,
-                              self.kappa, self.theta, self.sigma_v, self.rho, self.v0,
-                              self.option_type, self.buy_sell).price()
-        C_plus = Greeks_Heston(self.S, self.K, self.T, self.r + h,
-                              self.kappa, self.theta, self.sigma_v, self.rho, self.v0,
-                              self.option_type, self.buy_sell).price()
-        if self.buy_sell:
-            return (C_plus - C_minus) / (2*h)
-        else:
-            return - (C_plus - C_minus) / (2*h)
+        return (self._price(r=self.r + h) - self._price(r=self.r - h)) / (2 * h)
