@@ -10,19 +10,24 @@ from functions.vol_function import (
 
 def app():
 
-    required_keys = ["ticker","S", "K","r", "q", "T"]
-    if not all(k in st.session_state for k in required_keys):
-        st.error("Missing parameters. Please return to the Parameters page.")
+     # Check if all required parameters exist
+    if not all(k in st.session_state for k in [
+        "S", "K", "r", "sigma", "T", "q", "option_type", 
+        "option_class", "buy_sell"
+    ]):
+        st.error("Missing parameters. Please go back to the Parameters page.")
         return
 
-    # ---------- 1. Fetch parameters from session ----------
+    # Retrieve parameters from session state
     ticker = st.session_state.get("ticker")
     S = st.session_state.get("S")
     K = st.session_state.get("K")
     T = st.session_state.get("T")
     r = st.session_state.get("r")
+    sigma = st.session_state.get("sigma")
     q = st.session_state.get("q")
     option_type = st.session_state.get("option_type")
+
 
     with st.container():
         st.markdown(

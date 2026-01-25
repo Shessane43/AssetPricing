@@ -2,11 +2,12 @@
 from Models.blackscholes import BlackScholes
 from Models.heston import HestonModel
 from Models.gammavariance import VarianceGamma
+import numpy as np
 
 MODELS = {
     "Black-Scholes": BlackScholes,
     "Heston": HestonModel,
-    "Gamma Variance": VarianceGamma
+    "Gamma Variance": VarianceGamma, 
 }
 
 def price_option(model_name: str, params: dict):

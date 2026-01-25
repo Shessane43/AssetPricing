@@ -1,5 +1,8 @@
 import streamlit as st
-from pages import accueil, data, greeks, pricing, vol, bond_swap_futures, structured, portfolio, parametre
+from pages import accueil, data, greeks, pricing, vol, bond_swap_futures, structured, portfolio, parametre, vol_simulation
+
+
+st.markdown('<h1 class="title">Asset Pricing Application</h1>', unsafe_allow_html=True)
 
 # Page configuration
 st.set_page_config(
@@ -17,6 +20,7 @@ page = st.selectbox(
         "Pricing",
         "Greeks",
         "Implied Volatility Surface",
+        "Volatility Simulation",
         "Bond, Swap & Futures",
         "Structured Products",
         "My Portfolio"
@@ -36,6 +40,8 @@ elif page == "Greeks":
     greeks.app()
 elif page == "Implied Volatility Surface":
     vol.app()
+elif page == "Volatility Simulation":
+    vol_simulation.app()
 elif page == "Bond, Swap & Futures":
     bond_swap_futures.app()
 elif page == "Structured Products":

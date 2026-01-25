@@ -38,9 +38,6 @@ def app():
         unsafe_allow_html=True
     )
 
-    # Main title
-    st.markdown('<h1 class="title">Welcome to the Asset Pricing App</h1>', unsafe_allow_html=True)
-    
     # Horizontal line with reduced space
     st.markdown("<hr>", unsafe_allow_html=True)
 

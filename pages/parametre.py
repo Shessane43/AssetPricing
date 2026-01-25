@@ -12,7 +12,7 @@ def app():
 
     st.write(
         "Select a ticker, set the parameters, and visualize the payoff. "
-        "These parameters will be used for pricing, Greeks, and the volatility surface."
+        "These parameters will be used for pricing, Greeks, the volatility surface and strutured products pricing."
     )
 
     if "ticker" not in st.session_state:
@@ -43,7 +43,7 @@ def app():
         st.session_state["K"] = last_price
 
     # Number input qui met à jour K
-    st.session_state["K"] = st.number_input("Strike (K)", value=st.session_state["K"])
+    st.session_state["K"] = st.number_input("Strike (K)", value = last_price)
     st.session_state["T"] = st.number_input("Maturity (T in years)", value=1.0)
     st.session_state["r"] = st.number_input("Risk-free rate (r)", value=0.02)
     st.session_state["sigma"] = st.number_input("Volatility (σ)", value=0.2)
