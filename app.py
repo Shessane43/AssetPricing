@@ -61,8 +61,11 @@ h1, h2, h3 {
 .block-container {
     padding-top: 2rem;
 }
+            
 </style>
 """, unsafe_allow_html=True)
+
+
 
 if "ticker" not in st.session_state:
     st.session_state["ticker"] = "AAPL"
@@ -109,7 +112,7 @@ elif page == "Implied Volatility Surface":
     vol.app()
 elif page == "Volatility Simulation":
     vol_simulation.app()
-elif page == "Bond, Swap & Futures":
+elif page == "Bond & Swap":
     bond_swap_futures.app()
 elif page == "Structured Products":
     structured.app()

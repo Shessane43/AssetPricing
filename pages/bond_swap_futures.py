@@ -3,7 +3,6 @@ from functions.bond_function import Bond
 from functions.swap_function import Swap
 
 def app():
-    st.title("Pricing Tool: Bond or Swap")
     
     # Select instrument
     instrument_type = st.radio("Which instrument would you like to price?", ["Bond", "Swap"])
