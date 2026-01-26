@@ -45,7 +45,7 @@ def app():
     st.session_state["model_name"] = model_name
     show_explanation = st.checkbox(
         "Show model explanation",
-        value=True
+        value=False
     )
     if show_explanation and model_name in MODEL_EXPLANATIONS:
         st.markdown("---")
