@@ -1,17 +1,12 @@
-
 import streamlit as st
 
-st.set_page_config(page_title="Asset Pricing App", layout="wide")
-st.markdown("""
-<style>
-    [data-testid="stSidebar"] {
-        display: none;
-    }
-    [data-testid="collapsedControl"] {
-        display: none;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(
+    page_title="Asset Pricing Application",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# -------------------- GLOBAL STYLE --------------------
 st.markdown("""
 <style>
 html, body, [class*="css"] {
@@ -19,102 +14,90 @@ html, body, [class*="css"] {
     color: #e6edf3;
     font-family: 'Inter', sans-serif;
 }
-
-/* Titres */
 h1, h2, h3 {
     color: #e6edf3;
     font-weight: 700;
 }
-
-/* Selectbox, inputs */
-.stSelectbox, .stNumberInput {
-    background-color: #161b22;
-    border-radius: 10px;
-}
-
-/* Radio buttons */
-.stRadio > div {
-    background-color: #161b22;
-    padding: 15px;
-    border-radius: 12px;
-}
-
-/* Boutons */
-.stButton button {
-    background: linear-gradient(90deg, #f97316, #fb923c);
-    color: black;
-    border-radius: 12px;
-    font-weight: 700;
-    padding: 10px 18px;
-    border: none;
-}
-.stButton button:hover {
-    background: linear-gradient(90deg, #fb923c, #f97316);
-}
-
-/* Info / success boxes */
-.stAlert {
-    border-radius: 12px;
-}
-
-/* Supprimer padding moche */
 .block-container {
     padding-top: 2rem;
 }
-            
 </style>
 """, unsafe_allow_html=True)
 
+# -------------------- SESSION DEFAULTS --------------------
+st.session_state.setdefault("ticker", "AAPL")
 
-
-if "ticker" not in st.session_state:
-    st.session_state["ticker"] = "AAPL"
-
-if "S" not in st.session_state:
-    st.session_state["S"] = None
-
-from pages import (
-    accueil, data, greeks, pricing, vol,
-    bond_swap_futures, structured, portfolio,
-    parametre, vol_simulation
+# -------------------- IMPORT PAGES --------------------
+from views import (
+    accueil,
+    data,
+    pricing,
+    greeks,
+    vol,
+    vol_simulation,
+    bond_swap_futures,
+    structured,
+    portfolio,
+    parametre,
 )
 
-st.markdown('<h1 class="title">Asset Pricing Application</h1>', unsafe_allow_html=True)
-# Page selection: simple selectbox in the main area (not sidebar)
-page = st.selectbox(
-    "Select a page:",
-    [
-        "Home", 
-        "Parameters & Payoff", 
-        "Data",
+# -------------------- NAV STRUCTURE --------------------
+SECTIONS = {
+    "Home": [],
+    "Derivatives": [
+        "Parameters & Payoff",
         "Pricing",
         "Greeks",
+    ],
+    "Market": [
+        "Data",
         "Implied Volatility Surface",
         "Volatility Simulation",
+    ],
+    "Fixed Income": [
         "Bond & Swap",
+    ],
+    "Structured Products": [
         "Structured Products",
-        "My Portfolio"
-    ]
-)
+    ],
+    "Portfolio": [
+        "My Portfolio",
+    ],
+}
 
-# Display pages
-if page == "Home":
+st.markdown("<h1 style='text-align:center'>Asset Pricing Application</h1>", unsafe_allow_html=True)
+
+main_section = st.selectbox("Main Section", list(SECTIONS.keys()))
+
+sub_section = None
+if SECTIONS[main_section]:
+    sub_section = st.selectbox("Sub Section", SECTIONS[main_section])
+
+# -------------------- ROUTING --------------------
+if main_section == "Home":
     accueil.app()
-elif page == "Parameters & Payoff":
-    parametre.app()
-elif page == "Data":
-    data.app()
-elif page == "Pricing":
-    pricing.app()
-elif page == "Greeks":
-    greeks.app()
-elif page == "Implied Volatility Surface":
-    vol.app()
-elif page == "Volatility Simulation":
-    vol_simulation.app()
-elif page == "Bond & Swap":
+
+elif main_section == "Derivatives":
+    if sub_section == "Parameters & Payoff":
+        parametre.app()
+    elif sub_section == "Pricing":
+        pricing.app()
+    elif sub_section == "Greeks":
+        greeks.app()
+
+elif main_section == "Market":
+    if sub_section == "Data":
+        data.app()
+    elif sub_section == "Implied Volatility Surface":
+        vol.app()
+    elif sub_section == "Volatility Simulation":
+        vol_simulation.app()
+
+elif main_section == "Fixed Income":
     bond_swap_futures.app()
-elif page == "Structured Products":
+
+elif main_section == "Structured Products":
     structured.app()
-elif page == "My Portfolio":
+
+elif main_section == "Portfolio":
     portfolio.app()

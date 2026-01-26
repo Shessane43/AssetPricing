@@ -169,3 +169,7 @@ def app():
 
     fig_3d = plot_vol_surface(vol_surface_heston)
     st.plotly_chart(fig_3d, use_container_width=True)
+
+    if st.button("← Back to Home"):
+        st.session_state.page = "home"
+        st.rerun()

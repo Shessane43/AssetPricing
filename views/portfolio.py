@@ -235,3 +235,7 @@ def app():
     col1.metric("Total cost (T1)", f"{cost:.2f}")
     col2.metric("Market value (T2)", f"{market_value_t2:.2f}")
     col3.metric("P&L (T2)", f"{pnl_t2:.2f}", delta=f"{pnl_t2:.2f}")
+
+    if st.button("← Back to Home"):
+        st.session_state.page = "home"
+        st.rerun()

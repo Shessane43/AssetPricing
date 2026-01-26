@@ -116,3 +116,6 @@ def app():
         where $\\varepsilon_t \\sim \\mathcal N(0,1)$.
         """)
 
+    if st.button("← Back to Home"):
+        st.session_state.page = "home"
+        st.rerun()

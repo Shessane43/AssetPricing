@@ -133,3 +133,8 @@ def app():
 
         fig = plot_structured_payoff(products, S)
         st.pyplot(fig)
+        
+    if st.button("← Back to Home"):
+        st.session_state.page = "home"
+        st.rerun()
+

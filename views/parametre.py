@@ -70,3 +70,6 @@ def app():
     )
 
     st.pyplot(fig)
+    if st.button("← Back to Home"):
+        st.session_state.page = "home"
+        st.rerun()

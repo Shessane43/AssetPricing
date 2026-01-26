@@ -197,3 +197,7 @@ def app():
     cols = st.columns(5)
     for col, (name, val) in zip(cols, greek_values.items()):
         col.metric(name, f"{float(val):.4f}")
+
+    if st.button("← Back to Home"):
+        st.session_state.page = "home"
+        st.rerun()

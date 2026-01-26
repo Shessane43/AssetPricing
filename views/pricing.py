@@ -1,6 +1,6 @@
 import streamlit as st
 from functions.pricing_function import price_option, MODELS
-
+from functions.model_explanations import MODEL_EXPLANATIONS
 
 def app():
 
@@ -43,6 +43,16 @@ def app():
     st.subheader("Pricing Model")
     model_name = st.selectbox("Select model", list(MODELS.keys()))
     st.session_state["model_name"] = model_name
+    show_explanation = st.checkbox(
+        "Show model explanation",
+        value=True
+    )
+    if show_explanation and model_name in MODEL_EXPLANATIONS:
+        st.markdown("---")
+        st.markdown(
+            MODEL_EXPLANATIONS[model_name],
+            unsafe_allow_html=False
+        )
 
 
     if model_name == "Heston":
@@ -63,7 +73,15 @@ def app():
         st.session_state["rho"] = st.number_input(
             "Correlation ρ", value=st.session_state.get("rho", -0.5)
         )
+    if model_name == "Gamma Variance":
+        st.subheader("Variance Gamma Parameters")
 
+        st.session_state["theta"] = st.number_input(
+            "Theta (VG)", value=st.session_state.get("theta", 0.0)
+        )
+        st.session_state["nu"] = st.number_input(
+            "Nu (VG)", value=st.session_state.get("nu", 0.20)
+        )
  
     if st.button("Compute Price"):
 
@@ -87,9 +105,17 @@ def app():
                 "sigma_v": st.session_state["sigma_v"],
                 "rho": st.session_state["rho"],
             })
+        elif model_name == "Gamma Variance":
+            params.update({
+                "theta": st.session_state["theta"],
+                "nu": st.session_state["nu"],
+            })
 
         try:
             price = price_option(model_name, params)
             st.success(f"Price ({model_name}): **{price:.4f}**")
         except Exception as e:
             st.error(f"Pricing error: {e}")
+    if st.button("← Back to Home"):
+        st.session_state.page = "home"
+        st.rerun()
