@@ -53,7 +53,7 @@ def app():
         st.subheader("Bond Parameters")
         nominal = st.number_input("Nominal (€)", value=1000.0, step=100.0)
         coupon_rate = st.number_input("Coupon Rate (%)", value=5.0, step=0.1) / 100
-        rate = st.number_input("Interest Rate (%)", value=3.0, step=0.1) / 100
+        rate = st.number_input("Interest Rate (%) (Not used in Hull-White)", value=3.0, step=0.1) / 100
         maturity = st.number_input("Maturity (years)", value=5, step=1)
         frequency = st.number_input("Coupon Payments per Year", value=1, step=1)
 
@@ -115,7 +115,7 @@ def app():
         st.subheader("Swap Parameters")
         nominal = st.number_input("Nominal (€)", value=1000.0, step=100.0)
         fixed_rate = st.number_input("Fixed Rate (%)", value=5.0, step=0.1) / 100
-        zero_coupon_rate = st.number_input("Zero-Coupon Rate (%)", value=3.0, step=0.1) / 100
+        zero_coupon_rate = st.number_input("Zero-Coupon Rate (%) (Not used in Hull-White)", value=3.0, step=0.1) / 100
         maturity = st.number_input("Maturity (years)", value=5, step=1)
         frequency = st.number_input("Payments per Year", value=1, step=1)
 
