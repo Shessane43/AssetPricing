@@ -8,21 +8,16 @@ st.set_page_config(
 
 # -------------------- GLOBAL STYLE --------------------
 st.markdown("""
-<style>
-html, body, [class*="css"] {
-    background-color: #0e1117;
-    color: #e6edf3;
-    font-family: 'Inter', sans-serif;
-}
-h1, h2, h3 {
-    color: #e6edf3;
-    font-weight: 700;
-}
-.block-container {
-    padding-top: 2rem;
-}
-</style>
+<div style="text-align:center;margin-top:10px;margin-bottom:10px">
+  <div style="font-size:52px;font-weight:800;color:#e6edf3;">Asset Pricing Application</div>
+  <div style="color:#9ca3af;font-size:18px;margin-top:6px;">
+    Pricing • Greeks • Volatility • Portfolio
+  </div>
+</div>
 """, unsafe_allow_html=True)
+
+st.markdown("<hr style='border:0;height:1px;background:rgba(255,255,255,0.08);margin:18px 0 24px 0'/>", unsafe_allow_html=True)
+
 
 # -------------------- SESSION DEFAULTS --------------------
 st.session_state.setdefault("ticker", "AAPL")
@@ -66,12 +61,28 @@ SECTIONS = {
 }
 
 st.markdown("<h1 style='text-align:center'>Asset Pricing Application</h1>", unsafe_allow_html=True)
+# -------------------- HANDLE NAV FROM HOME --------------------
+if "__nav_target__" in st.session_state:
+    target_main, target_sub = st.session_state.pop("__nav_target__")
 
-main_section = st.selectbox("Main Section", list(SECTIONS.keys()))
+    st.session_state["main_section"] = target_main
+    if target_sub is not None:
+        st.session_state["sub_section"] = target_sub
+
+main_section = st.selectbox(
+    "Main Section",
+    list(SECTIONS.keys()),
+    key="main_section"
+)
 
 sub_section = None
 if SECTIONS[main_section]:
-    sub_section = st.selectbox("Sub Section", SECTIONS[main_section])
+    sub_section = st.selectbox(
+        "Sub Section",
+        SECTIONS[main_section],
+        key="sub_section"
+    )
+
 
 # -------------------- ROUTING --------------------
 if main_section == "Home":

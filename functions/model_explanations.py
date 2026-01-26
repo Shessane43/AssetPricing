@@ -25,15 +25,7 @@ where:
 - No jumps  
 - Frictionless markets  
 
-**Strengths:**
-- Closed-form pricing formulas  
-- Fast computation  
-- Easy interpretation of Greeks  
 
-**Limitations:**
-- No volatility smile  
-- Unrealistic tail behavior  
-- Poor fit for equity options at short maturities  
 """,
 
     "Heston": r"""
@@ -71,14 +63,6 @@ where:
 - Leverage effect  
 - Mean-reverting volatility  
 
-**Strengths:**
-- Better fit to equity options  
-- Realistic implied volatility surface  
-
-**Limitations:**
-- No jumps  
-- Calibration can be unstable  
-- More computationally expensive than BS  
 """,
 
     "Gamma Variance": r"""
@@ -115,14 +99,73 @@ $$
 - Infinite jump activity  
 - No continuous diffusion  
 
-**Strengths:**
-- Excellent fit for short maturities  
-- Captures skewness and kurtosis  
-- Generates volatility smiles naturally  
+""",
+    "Trinomial Tree": r"""
+### Trinomial Tree Model
 
-**Limitations:**
-- No stochastic volatility dynamics  
-- Parameters are not directly interpretable as implied volatility  
-- Calibration required for market consistency  
+The trinomial tree model is a **discrete-time lattice method** used to price options
+by approximating the continuous-time dynamics of the underlying asset.
+
+At each time step $\Delta t$, the asset price can move to **three possible states**:
+- Up
+- Middle
+- Down
+
+**Price evolution:**
+
+$$
+S_{t+\Delta t} =
+\begin{cases}
+S_t \cdot u      & \text{with probability } p_u \\
+S_t              & \text{with probability } p_m \\
+S_t / u          & \text{with probability } p_d
+\end{cases}
+$$
+
+where the up factor is defined as:
+
+$$
+u = e^{\sigma \sqrt{3 \Delta t}}
+$$
+
+---
+
+### Risk-neutral probabilities
+
+The probabilities are chosen so that the tree matches the **first two moments**
+(mean and variance) of the Black–Scholes model under the risk-neutral measure.
+
+$$
+\begin{aligned}
+p_u &= \frac{1}{6}
+      + \frac{(r - q - \tfrac{1}{2}\sigma^2)\sqrt{\Delta t}}
+             {2\sigma\sqrt{3}} \\
+p_m &= \frac{2}{3} \\
+p_d &= 1 - p_u - p_m
+\end{aligned}
+$$
+
+These probabilities ensure:
+- No-arbitrage
+- Correct drift under the risk-free measure
+- Convergence to Black–Scholes as $\Delta t \to 0$
+
+---
+
+### Option pricing principle
+
+The option price is obtained by **backward induction**:
+
+1. Compute the payoff at maturity
+2. Discount the expected value at each node
+3. Apply early exercise if the option is American
+
+$$
+V_t = e^{-r \Delta t}
+\mathbb{E}^{\mathbb{Q}}\!\left[ V_{t+\Delta t} \mid \mathcal{F}_t \right]
+$$
+
+
 """
+
 }

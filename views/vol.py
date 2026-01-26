@@ -38,6 +38,22 @@ def app():
         ["Black-Scholes (Market IV)", "Heston (Model IV)"],
         horizontal=True
     )
+    st.markdown(
+        f"""
+        **Ticker**: **{ticker}**
+
+        **Spot (S)**: {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
+        **Reference strike (K)**: {K0:.4f}
+
+        **Risk-free rate (r)**: {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
+        **Dividend yield (q)**: {q:.2%}
+
+        **Option type**: **{option_type.capitalize()}**  
+        **IV Model**: **{model_choice}**
+        """
+    )
+
+    st.markdown("---")
 
     maturities = get_all_option_maturities(ticker)
     if not maturities:

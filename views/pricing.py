@@ -82,6 +82,23 @@ def app():
         st.session_state["nu"] = st.number_input(
             "Nu (VG)", value=st.session_state.get("nu", 0.20)
         )
+    
+    if model_name == "Trinomial Tree":
+        st.subheader("Trinomial Tree Parameters")
+
+        st.session_state["n_steps"] = st.slider(
+            "Number of steps",
+            min_value=50,
+            max_value=500,
+            value=st.session_state.get("n_steps", 150),
+            step=10,
+        )
+        st.session_state["exercise"] = st.radio(
+            "Exercise type",
+            ["European", "American"],
+            index=0,
+            horizontal=True
+        )
  
     if st.button("Compute Price"):
 
@@ -109,6 +126,11 @@ def app():
             params.update({
                 "theta": st.session_state["theta"],
                 "nu": st.session_state["nu"],
+            })
+        elif model_name == "Trinomial Tree":
+            params.update({
+                "n_steps": st.session_state["n_steps"],
+                "exercise": st.session_state["exercise"].lower(),
             })
 
         try:

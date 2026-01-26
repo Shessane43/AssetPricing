@@ -1,77 +1,129 @@
 import streamlit as st
 
-def app():
+def _go(main, sub=None):
+    st.session_state["__nav_target__"] = (main, sub)
+    st.rerun()
 
-    # -------------------- CSS --------------------
+def app():
     st.markdown("""
     <style>
-    .card-btn button {
-        width: 100%;
-        height: 180px;
-        background: linear-gradient(135deg, #f97316, #fb923c);
-        border: none;
+    .home-wrap {max-width:1100px;margin:0 auto;}
+    .qs {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 18px;
+        padding: 18px 20px;
+        margin: 0 0 22px 0;
+    }
+    .qs b{color:#e6edf3;}
+    .muted{color:#9ca3af;}
+    .card {
+        background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid rgba(255,255,255,0.06);
         border-radius: 22px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.35);
-        color: #111827;
-        text-align: left;
-        padding: 28px;
-        font-size: 16px;
-        transition: all 0.25s ease;
-        cursor: pointer;
+        padding: 22px;
+        height: 210px;
+        box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+        transition: all 0.22s ease;
     }
-
-    .card-btn button:hover {
-        transform: translateY(-8px) scale(1.02);
+    .card:hover{
+        transform: translateY(-6px);
+        border: 1px solid rgba(249,115,22,0.30);
+        box-shadow: 0 26px 60px rgba(0,0,0,0.55);
     }
-
-    .card-title {
-        font-size: 24px;
-        font-weight: 800;
-        margin-bottom: 10px;
+    .card-title{font-size:20px;font-weight:750;margin-bottom:10px;}
+    .card-desc{font-size:14.5px;line-height:1.55;color:#d1d5db;margin-bottom:10px;}
+    .card-list{font-size:13.5px;line-height:1.6;color:#9ca3af;}
+    .cta button{
+        width:100%;
+        border-radius: 16px;
+        padding: 14px 14px;
+        border: 1px solid rgba(249,115,22,0.25);
+        background: rgba(249,115,22,0.10);
+        color:#e6edf3;
+        font-weight:650;
+        transition: all 0.2s ease;
     }
-
-    .card-text {
-        font-size: 15px;
-        line-height: 1.6;
+    .cta button:hover{
+        background: rgba(249,115,22,0.18);
+        border: 1px solid rgba(249,115,22,0.40);
     }
     </style>
     """, unsafe_allow_html=True)
 
-    # -------------------- HERO --------------------
+    st.markdown('<div class="home-wrap">', unsafe_allow_html=True)
+
     st.markdown("""
-    <div style="text-align:center;margin:40px 0 60px 0">
-        <h1 style="font-size:56px;font-weight:800">Asset Pricing Application</h1>
-        <p style="color:#9da5b4;font-size:18px">
-            Pricing • Greeks • Volatility • Portfolio
-        </p>
+    <div class="qs">
+      <b>Quick start</b><br>
+      <span class="muted">
+      1) Start with <b>Derivatives → Parameters & Payoff</b> to set the underlying + option specs.<br>
+      2) Go to <b>Pricing</b> to compare models (BS / Heston / VG / Tree).<br>
+      3) Use <b>Greeks</b> for sensitivities. Then explore <b>Market → Implied Volatility Surface</b>.
+      </span>
     </div>
     """, unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns(3, gap="large")
+    c1, c2, c3 = st.columns(3, gap="large")
 
-    # ---------------- DERIVATIVES ----------------
-    with col1:
-        with st.container():
-            st.markdown('<div class="card-btn">', unsafe_allow_html=True)
-            if st.button("🧮 Derivatives\n\nPricing, Greeks, payoff diagrams\nBlack-Scholes, Heston, Variance Gamma"):
-                st.session_state.page = "pricing"
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+    with c1:
+        st.markdown("""
+        <div class="card">
+          <div class="card-title">🧮 Derivatives</div>
+          <div class="card-desc">
+            Everything for option setup, payoff visualization, pricing and Greeks.
+          </div>
+          <div class="card-list">
+            • Parameters & Payoff (entry point)<br>
+            • Pricing (BS / Heston / VG / Tree)<br>
+            • Greeks (curves + metrics)
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    # ---------------- MARKET ----------------
-    with col2:
-        with st.container():
-            st.markdown('<div class="card-btn">', unsafe_allow_html=True)
-            if st.button("📊 Market Analysis\n\nMarket data, implied volatility surfaces,\nvolatility simulations"):
-                st.session_state.page = "data"
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="cta">', unsafe_allow_html=True)
+        if st.button("Open Parameters & Payoff"):
+            _go("Derivatives", "Parameters & Payoff")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # ---------------- PORTFOLIO ----------------
-    with col3:
-        with st.container():
-            st.markdown('<div class="card-btn">', unsafe_allow_html=True)
-            if st.button("💼 Portfolio\n\nPositions, valuation,\nrisk tracking"):
-                st.session_state.page = "portfolio"
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+    with c2:
+        st.markdown("""
+        <div class="card">
+          <div class="card-title">📊 Market</div>
+          <div class="card-desc">
+            Market data + implied volatility curves & surfaces (market IV vs model IV).
+          </div>
+          <div class="card-list">
+            • Data (spot / chains)<br>
+            • IV Surface (2D slice + 3D surface)<br>
+            • Volatility Simulation
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div class="cta">', unsafe_allow_html=True)
+        if st.button("Open Implied Volatility Surface", key="go_iv"):
+            _go("Market", "Implied Volatility Surface")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c3:
+        st.markdown("""
+        <div class="card">
+          <div class="card-title">💼 Portfolio</div>
+          <div class="card-desc">
+            Aggregate positions, valuation and risk tracking at portfolio level.
+          </div>
+          <div class="card-list">
+            • Positions overview<br>
+            • Portfolio valuation<br>
+            • Risk tracking
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div class="cta">', unsafe_allow_html=True)
+        if st.button("Open My Portfolio", key="go_ptf"):
+            _go("Portfolio", "My Portfolio")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)

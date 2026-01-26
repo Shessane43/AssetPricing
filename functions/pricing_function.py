@@ -1,11 +1,12 @@
 from Models.blackscholes import BlackScholes
 from Models.heston import HestonModel
 from Models.gammavariance import VarianceGamma
-
+from Models.treemodel import TrinomialTree
 MODELS = {
     "Black-Scholes": BlackScholes,
     "Heston": HestonModel,
-    "Gamma Variance": VarianceGamma
+    "Gamma Variance": VarianceGamma,
+    "Trinomial Tree": TrinomialTree
 }
 
 def price_option(model_name: str, params: dict):
@@ -54,7 +55,22 @@ def price_option(model_name: str, params: dict):
                 raise ValueError(f"Paramètre '{p}' manquant pour Gamma Variance")
 
         return ModelClass(**params_clean).price()
+    elif model_name == "Trinomial Tree":
 
+        buy_sell = params_clean.pop("buy_sell").lower()
+        position = "buy" if buy_sell in ["long", "buy"] else "sell"
+        params_clean.pop("option_class", None)
+        return ModelClass(
+            S=params_clean["S"],
+            K=params_clean["K"],
+            r=params_clean["r"],
+            q=params_clean.get("q", 0.0),
+            T=params_clean["T"],
+            sigma=params_clean["sigma"],
+            option_type=params_clean["option_type"],
+            exercise=params_clean.get("exercise", "european"),
+            n_steps=params_clean.get("n_steps", 100),
+        ).price()
 
     else:
         raise ValueError("Modèle non supporté")
