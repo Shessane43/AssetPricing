@@ -67,24 +67,52 @@ def app():
         st.markdown("""
         ### Log-Stochastic Volatility Model (log-SV)
 
-        The model assumes that the **log of the variance follows an Ornstein-Uhlenbeck process**:
+        The model jointly describes the dynamics of the **asset price**, its **stochastic volatility**,
+        and their **correlation (leverage effect)**.
+
+        **Asset price dynamics**:
 
         $$
-        d \ln(σ^2_t) = κ ( \ln(θ) - \ln(σ^2_t) ) dt + σ_v dW_t
+        \\frac{dS_t}{S_t} = \\mu \\, dt + \\sigma_t \\, dW_t^S
         $$
 
         where:
-        - $σ_t$ : instantaneous volatility
-        - $κ$ : mean reversion speed
-        - $θ$ : long-term variance
-        - $σ_v$ : volatility of volatility
-        - $W_t$ : standard Brownian motion
+        - $S_t$ : asset price
+        - $\\mu$ : drift
+        - $\\sigma_t$ : instantaneous volatility
+        - $W_t^S$ : standard Brownian motion
+
+        **Stochastic volatility dynamics (log-variance)**:
+
+        $$
+        d \\ln(\\sigma_t^2)
+        = \\kappa ( \\ln(\\theta) - \\ln(\\sigma_t^2) ) \\, dt
+        + \\sigma_v \\, dW_t^v
+        $$
+
+        where:
+        - $\\kappa$ : mean reversion speed
+        - $\\theta$ : long-term variance
+        - $\\sigma_v$ : volatility of volatility
+        - $W_t^v$ : standard Brownian motion
+
+        **Correlation (leverage effect)**:
+
+        $$
+        d\\langle W_t^S, W_t^v \\rangle = \\rho \\, dt
+        $$
+
+        with $\\rho \\in [-1,1]$.
 
         **Euler discretization** for simulation:
 
         $$
-        \ln(σ^2_{t+dt}) = \ln(σ^2_t) + κ ( \ln(θ) - \ln(σ^2_t) ) dt + σ_v \sqrt{dt} \, ε_t
+        \\ln(\\sigma^2_{t+\\Delta t})
+        = \\ln(\\sigma^2_t)
+        + \\kappa ( \\ln(\\theta) - \\ln(\\sigma^2_t) ) \\Delta t
+        + \\sigma_v \\sqrt{\\Delta t} \\, \\varepsilon_t
         $$
 
-        with $ε_t \sim N(0,1)$.
+        where $\\varepsilon_t \\sim \\mathcal N(0,1)$.
         """)
+
