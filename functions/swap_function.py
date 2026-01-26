@@ -69,3 +69,19 @@ class Swap:
             text.set_color("orange")
 
         return fig
+    
+    def duration(self, dr=0.0001):
+       pv_plus = Swap(self.nominal, self.fixed_rate, self.zero_coupon_rate + dr, self.maturity, self.frequency).price_from(0)
+       pv_minus = Swap(self.nominal, self.fixed_rate, self.zero_coupon_rate - dr, self.maturity, self.frequency).price_from(0)
+       pv = self.price_from(0)
+       return (pv_minus - pv_plus) / (2 * dr * pv)
+
+    def convexity(self, dr=0.0001):
+       pv_plus = Swap(self.nominal, self.fixed_rate, self.zero_coupon_rate + dr, self.maturity, self.frequency).price_from(0)
+       pv_minus = Swap(self.nominal, self.fixed_rate, self.zero_coupon_rate - dr, self.maturity, self.frequency).price_from(0)
+       pv = self.price_from(0)
+       return (pv_plus + pv_minus - 2 * pv) / (pv * dr ** 2)
+
+    def pv01(self):
+       pv_shift = Swap(self.nominal, self.fixed_rate, self.zero_coupon_rate + 0.0001, self.maturity, self.frequency).price_from(0)
+       return pv_shift - self.price_from(0)

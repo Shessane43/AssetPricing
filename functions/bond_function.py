@@ -68,3 +68,23 @@ class Bond:
 
         return fig
 
+    def duration(self, dr=0.0001):
+       """Macaulay Duration approximation par différences finies"""
+       pv_plus = Bond(self.nominal, self.coupon_rate, self.rate + dr, self.maturity, self.frequency).price()
+       pv_minus = Bond(self.nominal, self.coupon_rate, self.rate - dr, self.maturity, self.frequency).price()
+       pv = self.price()
+       return (pv_minus - pv_plus) / (2 * dr * pv)
+
+    def convexity(self, dr=0.0001):
+       """Convexity approximation par différences finies"""
+       pv_plus = Bond(self.nominal, self.coupon_rate, self.rate + dr, self.maturity, self.frequency).price()
+       pv_minus = Bond(self.nominal, self.coupon_rate, self.rate - dr, self.maturity, self.frequency).price()
+       pv = self.price()
+       return (pv_plus + pv_minus - 2 * pv) / (pv * dr ** 2)
+
+    def pv01(self):
+       """PV01 / DV01 approximation"""
+       pv_shift = Bond(self.nominal, self.coupon_rate, self.rate + 0.0001, self.maturity, self.frequency).price()
+       return pv_shift - self.price()
+
+
