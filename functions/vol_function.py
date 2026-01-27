@@ -90,15 +90,23 @@ def implied_volatility(S, K, T, r, q, market_price, option_type, sigma0=0.2, tol
 # Yahoo data
 # ----------------------------
 def _mid_price_from_row(row) -> float:
-    bid = row.get("bid", 0.0)
-    ask = row.get("ask", 0.0)
-    last = row.get("lastPrice", 0.0)
+    bid = row.get("bid", np.nan)
+    ask = row.get("ask", np.nan)
+    last = row.get("lastPrice", np.nan)
 
+    # Preferred: bid/ask mid
     if pd.notna(bid) and pd.notna(ask) and bid > 0 and ask > 0:
-        return float(0.5 * (bid + ask))
+        mid = 0.5 * (bid + ask)
+        if (ask - bid) / max(mid, 1e-12) < 0.50:   # 50% spread tol
+            return float(mid)
+
+    # Fallback: lastPrice if reasonable
     if pd.notna(last) and last > 0:
         return float(last)
+
     return np.nan
+
+
 
 
 def get_market_prices_yahoo(ticker, T_days=None):
@@ -141,64 +149,54 @@ def get_all_option_maturities(ticker):
 # Build IV curve
 # ----------------------------
 def generate_vol_curve(S, maturity_date, r, q, market_calls, market_puts, option_type):
-    option_type = option_type.lower()
-    T = (pd.to_datetime(maturity_date) - pd.Timestamp.today()).days / 365.0
+    T = (pd.to_datetime(maturity_date) - pd.Timestamp.today()).total_seconds() / (365.0*24*3600)
     if T <= 0:
         return [], [], np.nan, {}
 
     disc_r = np.exp(-r * T)
     disc_q = np.exp(-q * T)
+    F = S * disc_q / disc_r  # forward approx
 
-    strikes = sorted(set(market_calls.keys()).union(set(market_puts.keys())))
-    prices_for_type = {}
+    strikes = sorted(set(market_calls) | set(market_puts))
+    prices = {}
 
     for K in strikes:
-        c = market_calls.get(K, None)
-        p = market_puts.get(K, None)
+        c = market_calls.get(K, np.nan)
+        p = market_puts.get(K, np.nan)
 
-        if option_type == "call":
-            if c is not None and np.isfinite(c):
-                price = c
-                if p is not None and np.isfinite(p):
-                    c_par = p + (S * disc_q - K * disc_r)
-                    price = 0.5 * (c + c_par)
-                prices_for_type[K] = float(price)
-            elif p is not None and np.isfinite(p):
-                prices_for_type[K] = float(p + (S * disc_q - K * disc_r))
-        else:
-            if p is not None and np.isfinite(p):
-                price = p
-                if c is not None and np.isfinite(c):
-                    p_par = c + (K * disc_r - S * disc_q)
-                    price = 0.5 * (p + p_par)
-                prices_for_type[K] = float(price)
-            elif c is not None and np.isfinite(c):
-                prices_for_type[K] = float(c + (K * disc_r - S * disc_q))
+        # OTM selection (recommended)
+        if K >= F:   # use calls
+            if np.isfinite(c) and c > 0:
+                prices[K] = float(c)
+        else:        # use puts
+            if np.isfinite(p) and p > 0:
+                prices[K] = float(p)
 
-    strikes_out = sorted(prices_for_type.keys())
-    vols = [implied_volatility(S, K, T, r, q, prices_for_type[K], option_type) for K in strikes_out]
+    strikes_out = sorted(prices.keys())
+    vols = [implied_volatility(S, K, T, r, q, prices[K], "call" if K>=F else "put")
+            for K in strikes_out]
 
-    return strikes_out, vols, T, prices_for_type
-
+    return strikes_out, vols, T, prices
 
 # ----------------------------
 # 2D plot
 # ----------------------------
 def smooth_vol_curve(strikes, vols, num_points=120, smoothing_factor=1.0):
-    strikes = np.asarray(strikes, dtype=float)
-    vols = np.asarray(vols, dtype=float)
+    strikes = np.asarray(strikes, float)
+    vols = np.asarray(vols, float)
 
-    mask = np.isfinite(vols)
-    strikes = strikes[mask]
-    vols = vols[mask]
-
+    mask = np.isfinite(vols) & (vols > 1e-4) & (vols < 3.0)  # filtre aussi
+    strikes, vols = strikes[mask], vols[mask]
     if strikes.size < 4:
         return strikes, vols
 
-    spline = UnivariateSpline(strikes, vols, s=float(smoothing_factor), k=3)
-    strikes_smooth = np.linspace(strikes.min(), strikes.max(), int(num_points))
-    vols_smooth = spline(strikes_smooth)
-    return strikes_smooth, vols_smooth
+    y = np.log(vols)
+    spline = UnivariateSpline(strikes, y, s=float(smoothing_factor), k=3)
+
+    x_new = np.linspace(strikes.min(), strikes.max(), int(num_points))
+    vols_new = np.exp(spline(x_new))
+    return x_new, vols_new
+
 
 
 def plot_vol_curve(strikes, vols, maturity=None, K=None, title="Implied Volatility Curve"):
@@ -266,8 +264,13 @@ def plot_vol_surface(vol_curves, grid_n=50):
     T_grid = np.linspace(float(all_T.min()), float(all_T.max()), int(grid_n))
     X, Z = np.meshgrid(strikes_grid, T_grid)
 
-    # IMPORTANT : nearest ne crash jamais (pas de QhullError)
-    Y = griddata((all_strikes, all_T), all_vols, (X, Z), method="nearest")
+    try:
+        Y = griddata((all_strikes, all_T), all_vols, (X, Z), method="linear")
+        Y2 = griddata((all_strikes, all_T), all_vols, (X, Z), method="nearest")
+        Y = np.where(np.isfinite(Y), Y, Y2)
+    except Exception:
+        Y = griddata((all_strikes, all_T), all_vols, (X, Z), method="nearest")
+
 
     fig = go.Figure(data=[go.Surface(x=X, y=Z, z=Y)])
     fig.update_layout(

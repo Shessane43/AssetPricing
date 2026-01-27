@@ -56,21 +56,16 @@ class HestonModel(Model):
         a = self.kappa * self.theta
         sigma = self.sigma_v
         rho = self.rho
-
-        # sqrt en complexe garanti
         d = np.sqrt((rho * sigma * i * u - b_j) ** 2 - sigma**2 * (2 * u_j * i * u - u**2) + 0j)
 
-        # "trap-safe" g (important)
         g = (b_j - rho * sigma * i * u - d) / (b_j - rho * sigma * i * u + d)
 
         exp_dt = np.exp(-d * tau)
 
-        # eps pour éviter divisions par ~0
         eps = 1e-14 + 0j
         one_minus_g = 1.0 - g
         one_minus_gexp = 1.0 - g * exp_dt
 
-        # log en complexe (et stable)
         log_term = np.log((one_minus_gexp + eps) / (one_minus_g + eps))
 
         C = self._r_adj() * i * u * tau + (a / sigma**2) * ((b_j - rho * sigma * i * u - d) * tau - 2.0 * log_term)
@@ -163,9 +158,6 @@ class HestonModel(Model):
             return self.price_mc()
         return self.price_closed_form()
 
-    # ---------------------------------------------------
-    # Implied volatility (BS)
-    # ---------------------------------------------------
     def implied_volatility(self, market_price):
         target = market_price * self._sign()
 
@@ -181,9 +173,7 @@ class HestonModel(Model):
         except ValueError:
             return None
 
-    # ---------------------------------------------------
-    # Calibration
-    # ---------------------------------------------------
+
     @staticmethod
     def calibrate(
         S, r, T, q,
@@ -211,3 +201,98 @@ class HestonModel(Model):
 
         res = minimize(objective, initial_guess, method="Nelder-Mead")
         return res.x
+    
+    @staticmethod
+    def calibrate_multi_maturity(
+        S, r, q,
+        option_type, position,
+        data_by_maturity,
+        initial_guess=(0.04, 2.0, 0.04, 0.30, -0.50),
+        use_feller_penalty=True,
+        method="L-BFGS-B",
+        maxiter=300,
+        weights_by_maturity=None
+    ):
+        """
+        Calibration multi-maturité.
+
+        data_by_maturity: list of dicts, each dict:
+            {
+              "T": float,
+              "K_list": list[float],
+              "market_prices": list[float]
+            }
+
+        weights_by_maturity: optional list of arrays same shape as market_prices per maturity
+                             (e.g. inverse spread^2)
+        """
+
+        option_type = option_type.lower()
+
+        def objective(x):
+            v0, kappa, theta, sigma_v, rho = x
+
+            # Hard invalid
+            if v0 <= 0 or kappa <= 0 or theta <= 0 or sigma_v <= 0 or not (-0.999 < rho < 0.999):
+                return 1e12
+
+            # Soft Feller penalty
+            penalty = 0.0
+            if use_feller_penalty:
+                feller = 2.0 * kappa * theta - sigma_v**2
+                if feller < 0:
+                    penalty += 1e6 * (feller**2)
+
+            se_sum = 0.0
+            w_sum = 0.0
+
+            for j, slice_data in enumerate(data_by_maturity):
+                T = float(slice_data["T"])
+                K_list = slice_data["K_list"]
+                mkt = np.asarray(slice_data["market_prices"], float)
+
+                if weights_by_maturity is None:
+                    w = np.ones_like(mkt)
+                else:
+                    w = np.asarray(weights_by_maturity[j], float)
+
+                # Model prices for this maturity
+                mod = np.empty_like(mkt)
+                for i, K in enumerate(K_list):
+                    model = HestonModel(
+                        S, K, r, T, q,
+                        option_type=option_type,
+                        position=position,
+                        option_class="vanilla",
+                        v0=v0, kappa=kappa, theta=theta, sigma_v=sigma_v, rho=rho
+                    )
+                    p = model.price()
+                    if not np.isfinite(p):
+                        return 1e12
+                    mod[i] = p
+
+                err = mod - mkt
+                se_sum += np.sum(w * err * err)
+                w_sum += np.sum(w)
+
+            return se_sum / max(w_sum, 1e-12) + penalty
+
+        x0 = np.array(initial_guess, float)
+
+        bounds = [
+            (1e-6, 2.0),      # v0
+            (1e-4, 50.0),     # kappa
+            (1e-6, 2.0),      # theta
+            (1e-4, 5.0),      # sigma_v
+            (-0.999, 0.999)   # rho
+        ]
+
+        res = minimize(
+            objective,
+            x0=x0,
+            method=method,
+            bounds=bounds if method.upper() in ["L-BFGS-B", "TNC", "SLSQP"] else None,
+            options={"maxiter": maxiter}
+        )
+
+        return res.x, res
