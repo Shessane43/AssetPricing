@@ -56,21 +56,16 @@ class HestonModel(Model):
         a = self.kappa * self.theta
         sigma = self.sigma_v
         rho = self.rho
-
-        # sqrt en complexe garanti
         d = np.sqrt((rho * sigma * i * u - b_j) ** 2 - sigma**2 * (2 * u_j * i * u - u**2) + 0j)
 
-        # "trap-safe" g (important)
         g = (b_j - rho * sigma * i * u - d) / (b_j - rho * sigma * i * u + d)
 
         exp_dt = np.exp(-d * tau)
 
-        # eps pour éviter divisions par ~0
         eps = 1e-14 + 0j
         one_minus_g = 1.0 - g
         one_minus_gexp = 1.0 - g * exp_dt
 
-        # log en complexe (et stable)
         log_term = np.log((one_minus_gexp + eps) / (one_minus_g + eps))
 
         C = self._r_adj() * i * u * tau + (a / sigma**2) * ((b_j - rho * sigma * i * u - d) * tau - 2.0 * log_term)
@@ -163,9 +158,6 @@ class HestonModel(Model):
             return self.price_mc()
         return self.price_closed_form()
 
-    # ---------------------------------------------------
-    # Implied volatility (BS)
-    # ---------------------------------------------------
     def implied_volatility(self, market_price):
         target = market_price * self._sign()
 
@@ -181,9 +173,7 @@ class HestonModel(Model):
         except ValueError:
             return None
 
-    # ---------------------------------------------------
-    # Calibration
-    # ---------------------------------------------------
+
     @staticmethod
     def calibrate(
         S, r, T, q,
