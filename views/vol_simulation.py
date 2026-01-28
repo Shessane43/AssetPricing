@@ -1,39 +1,20 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from functions.vol_simulation_function import simulate_log_sv
+from functions.vol_simulation_function import simulate_log_sv, plot_vol_paths
 
-def plot_vol_paths(vol_paths, T, title="Volatility Paths"):
-    """
-    Plot volatility paths with dark-orange theme.
-    """
-    fig, ax = plt.subplots(figsize=(12,6))
-    fig.patch.set_facecolor("black")
-    ax.set_facecolor("black")
-
-    time_grid = np.linspace(0, T, vol_paths.shape[1])
-    
-    # Plot up to 10 sample paths
-    for i in range(min(10, vol_paths.shape[0])):
-        ax.plot(time_grid, vol_paths[i,:], color="orange", lw=1, alpha=0.7)
-    
-    # Plot the mean path
-    avg_path = vol_paths.mean(axis=0)
-    ax.plot(time_grid, avg_path, color="red", lw=2, label="Mean path")
-
-    # Axes and style
-    ax.set_xlabel("Time (years)", color="orange")
-    ax.set_ylabel("Volatility σ(t)", color="orange")
-    for side in ("bottom", "top", "left", "right"):
-        ax.spines[side].set_color("orange")
-    ax.tick_params(colors="orange")
-    ax.grid(True, linestyle="--", color="orange", alpha=0.3)
-    ax.set_title(title, color="orange")
-    ax.legend(facecolor="black", edgecolor="orange", labelcolor="orange")
-    
-    return fig
 
 def app():
+    """
+    Streamlit app for simulating and visualizing log-stochastic volatility (log-SV).
+
+    Features:
+    - User inputs for model parameters (σ₀, κ, θ, σ_v, T, N, M)
+    - Simulate volatility paths using Euler discretization
+    - Plot individual sample paths and the mean path
+    - Optional model explanation with equations
+    - Store simulated paths in session_state for downstream pricing
+    """
     st.title("Volatility Simulation (log-SV)")
 
     # --- User inputs ---
@@ -45,24 +26,27 @@ def app():
     N = st.number_input("Time steps", value=252)
     M = st.number_input("Number of paths", value=50)
 
+    # --- Simulation trigger ---
     if st.button("Simulate Volatility"):
+        # Call the log-SV simulator
         vol_paths = simulate_log_sv(
             sigma0=sigma0, kappa=kappa, theta=theta,
             sigma_v=sigma_v, T=T, N=N, M=M
         )
         
-        # Save simulated paths in session_state for pricing
+        # Store simulated paths in session_state for use in other pages
         st.session_state["simulated_sigma_paths"] = vol_paths
         st.session_state["vol_T"] = T
 
-        # --- Plots ---
+        # --- Plot sample paths ---
         fig1 = plot_vol_paths(vol_paths, T, title="Sample Volatility Paths (log-SV)")
         st.pyplot(fig1)
 
+        # --- Plot mean path ---
         fig2 = plot_vol_paths(vol_paths.mean(axis=0).reshape(1,-1), T, title="Average Volatility Path")
         st.pyplot(fig2)
 
-    # --- Model explanation ---
+    # --- Optional model explanation ---
     if st.checkbox("Show Model Explanation"):
         st.markdown("""
         ### Log-Stochastic Volatility Model (log-SV)
@@ -116,6 +100,7 @@ def app():
         where $\\varepsilon_t \\sim \\mathcal N(0,1)$.
         """)
 
+    # --- Navigation back to home ---
     if st.button("← Back to Home"):
         st.session_state.page = "home"
         st.rerun()

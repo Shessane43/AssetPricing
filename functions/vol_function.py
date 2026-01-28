@@ -233,7 +233,7 @@ def plot_vol_curve(strikes, vols, maturity=None, K=None, title="Implied Volatili
 
 
 # ----------------------------
-# 3D surface plot (robuste)
+# 3D surface plot 
 # ----------------------------
 def plot_vol_surface(vol_curves, grid_n=50):
     all_strikes, all_T, all_vols = [], [], []

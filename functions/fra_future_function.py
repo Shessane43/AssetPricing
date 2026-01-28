@@ -1,12 +1,25 @@
 class FRAFuture:
     def __init__(self, nominal, forward_rate, strike, product_type="FRA", start=None, end=None):
         """
-        FRA/Future pricing class.
+        Parameters
+        ----------
+        nominal : float
+            Notional amount of the FRA or Future.
+        forward_rate : float
+            Forward interest rate of the underlying.
+        strike : float
+            Strike rate of the FRA or Future.
+        product_type : str, optional
+            Type of the product: "FRA" or "Future" (default is "FRA").
+        start : float, optional
+            Start time of the FRA period in years (required for FRA).
+        end : float, optional
+            End time of the FRA period in years (required for FRA).
         """
         self.nominal = nominal
         self.forward_rate = forward_rate
         self.strike = strike
-        self.product_type = product_type  # "FRA" ou "Future"
+        self.product_type = product_type  
 
         if product_type == "FRA":
             if start is None or end is None:
@@ -15,31 +28,30 @@ class FRAFuture:
             self.end = end
             self.delta = end - start
         else:
-            # Future n'a pas besoin de start/end
             self.start = None
             self.end = None
             self.delta = 0
 
     def price_classic(self):
-        """Compute the classic price of FRA or Future."""
+        """
+        Computes the classic price of a FRA or an interest rate future.
+
+        Returns
+        -------
+        float
+            Present value of the FRA or Future.
+            Positive value corresponds to a long position when the forward rate
+            is above the strike.
+        """
         if self.product_type == "FRA":
-            # FRA PV
-            PV = self.nominal * (self.forward_rate - self.strike) * self.delta / (1 + self.delta * self.forward_rate)
+            PV = (
+                self.nominal
+                * (self.forward_rate - self.strike)
+                * self.delta
+                / (1 + self.delta * self.forward_rate)
+            )
         elif self.product_type == "Future":
-            # Future PV approximé (Mark-to-market)
             PV = self.nominal * (self.forward_rate - self.strike)
         else:
             raise ValueError("product_type must be 'FRA' or 'Future'")
         return PV
-
-    def metrics(self, dr=1e-4):
-        """Compute Delta. Vega n'existe plus pour FRA/Future."""
-        price = self.price_classic()
-
-        # Delta wrt forward rate
-        fra_up = FRAFuture(self.nominal, self.forward_rate + dr, self.strike, self.product_type, self.start, self.end)
-        fra_down = FRAFuture(self.nominal, self.forward_rate - dr, self.strike, self.product_type, self.start, self.end)
-        delta = (fra_up.price_classic() - fra_down.price_classic()) / (2 * dr)
-
-        vega = 0.0  # plus de volatilité pour FRA/Future
-        return price, delta, vega
