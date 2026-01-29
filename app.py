@@ -20,7 +20,8 @@ st.markdown("<hr style='border:0;height:1px;background:rgba(255,255,255,0.08);ma
 
 
 # -------------------- SESSION DEFAULTS --------------------
-st.session_state.setdefault("ticker", "AAPL")
+if "ticker" not in st.session_state:
+    st.session_state.ticker = "AAPL"
 
 # -------------------- IMPORT PAGES --------------------
 from views import (
