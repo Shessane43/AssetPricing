@@ -49,15 +49,9 @@ SECTIONS = {
         "Implied Volatility Surface",
         "Volatility Simulation",
     ],
-    "Fixed Income": [
-        "Bond & Swap",
-    ],
-    "Structured Products": [
-        "Structured Products",
-    ],
-    "Portfolio": [
-        "My Portfolio",
-    ],
+    "Fixed Income": [],
+    "Structured Products": [],
+    "My Portfolio": [],
 }
 
 st.markdown("<h1 style='text-align:center'>Asset Pricing Application</h1>", unsafe_allow_html=True)
@@ -110,5 +104,5 @@ elif main_section == "Fixed Income":
 elif main_section == "Structured Products":
     structured.app()
 
-elif main_section == "Portfolio":
+elif main_section == "My Portfolio":
     portfolio.app()
