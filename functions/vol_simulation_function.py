@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def simulate_log_sv(S0=100, sigma0=0.2, kappa=2.0, theta=0.04, sigma_v=0.3, rho=-0.5, T=1, N=252, M=50, seed=42):
     """
