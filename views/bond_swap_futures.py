@@ -8,7 +8,9 @@ from functions.fra_future_function import FRAFuture
 from functions.hull_white_function import HullWhite
 
 def app():
-    # -------------------- Model selection --------------------
+    
+    # -------------------- Model selection --------------------``
+
     pricing_model = st.selectbox(
         "Select pricing model",
         ["Classic (Closed-form)", "Hull-White"]
@@ -35,12 +37,14 @@ def app():
             """)
 
     # -------------------- Instrument selection --------------------
+
     instrument_category = st.radio(
         "Select instrument category",
         ["Bond", "Swap", "Cap / Floor", "FRA / Future"]
     )
 
     # -------------------- Bond --------------------
+
     if instrument_category == "Bond":
         st.subheader("Bond Parameters")
         nominal = st.number_input("Nominal (€)", value=1000.0, step=100.0)
@@ -69,11 +73,8 @@ def app():
                 st.metric("Price (€)", f"{price:.2f}")
                 st.markdown("**Note:** Duration, Convexity, and PV01 are not available under Hull-White Monte Carlo pricing.")
 
-
-
-           
-
     # -------------------- Swap --------------------
+
     elif instrument_category == "Swap":
         st.subheader("Swap Parameters")
         nominal = st.number_input("Nominal (€)", value=1000.0, step=100.0)
@@ -96,15 +97,13 @@ def app():
                 col3.metric("Convexity", f"{convexity:.4f}")
                 col4.metric("PV01 (€)", f"{pv01:.2f}")
             else:
-                mean_pv , path_pv= hw_model.mc_swap(nominal, fixed_rate, maturity, frequency, N=5000, M=100)
-                price = mean_pv
-                st.metric("Price (€)", f"{price:.2f}")
+                mean_pv , path_pv = hw_model.mc_swap(nominal, fixed_rate, maturity, frequency, N=5000, M=100)
+                value = mean_pv
+                st.metric("Price (€)", f"{value:.2f}")
                 st.markdown("**Note:** Duration, Convexity, and PV01 are not available under Hull-White Monte Carlo pricing.")
 
-
-
-
     # -------------------- Cap / Floor --------------------
+
     elif instrument_category == "Cap / Floor":
         if pricing_model == "Hull-White":
             st.warning("Hull-White pricing is not available for Cap/Floor. Please select Classic (Closed-form).")
@@ -120,21 +119,11 @@ def app():
         if st.button("Calculate Cap/Floor Price"):
             capfloor = CapFloor(nominal, strike, maturity, frequency, vol, option_type)
             price = capfloor.price_classic()
+            st.metric("Price (€)", f"{price:.2f}")
 
-            dr = 1e-4
-            dvol = 1e-4
-            cap_up = CapFloor(nominal, strike, maturity, frequency, vol + dr, option_type)
-            cap_down = CapFloor(nominal, strike, maturity, frequency, vol - dr, option_type)
-            vega = (cap_up.price_classic() - cap_down.price_classic()) / (2 * dr)
-            delta = (capfloor.price_classic(strike + dr) - capfloor.price_classic(strike - dr)) / (2 * dr)
-
-            st.subheader(f"{option_type} Metrics")
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Price (€)", f"{price:.2f}")
-            col2.metric("Delta (€)", f"{delta:.4f}")
-            col3.metric("Vega (€)", f"{vega:.4f}")
 
     # -------------------- FRA / Future --------------------
+
     elif instrument_category == "FRA / Future":
         if pricing_model == "Hull-White":
             st.warning("Hull-White pricing is not available for FRA/Future. Please select Classic (Closed-form).")
@@ -146,7 +135,7 @@ def app():
         forward_rate = st.number_input("Forward Rate (%)", value=3.0, step=0.01) / 100
         strike = st.number_input("Strike Rate (%)", value=1.0, step=0.01) / 100
 
-        # Start/end uniquement pour FRA
+      
         if product_type == "FRA":
             start = st.number_input("Start (years)", value=1.0, step=0.25)
             end = st.number_input("End (years)", value=1.25, step=0.25)
@@ -161,7 +150,7 @@ def app():
                     start=start,
                     end=end
                 )
-            else:  # Future n’a pas de start/end et pas de vol
+            else:  
                 fra_future = FRAFuture(
                     nominal=nominal,
                     forward_rate=forward_rate,
@@ -169,10 +158,6 @@ def app():
                     product_type=product_type
                 )
 
-            price, delta, vega = fra_future.metrics()
+            price = fra_future.price_classic()
+            st.metric("Price (€)", f"{price:.2f}")
 
-            st.subheader(f"{product_type} Metrics")
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Price (€)", f"{price:.2f}")
-            col2.metric("Delta (€)", f"{delta:.4f}")
-            col3.metric("Vega (€)", f"{vega:.4f}")

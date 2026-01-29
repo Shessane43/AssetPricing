@@ -75,7 +75,7 @@ def app():
         S, strikes_2d, vols_2d, T_2d, r, q
     )
 
-    if model_choice == "Black-Scholes (Market IV)":
+    if model_choice == "Black-Scholes":
         if len(strikes_2d) < 4:
             st.warning("Not enough IV points for 2D smile.")
         else:
@@ -119,7 +119,7 @@ def app():
         st.warning("Not enough data to build volatility surface.")
         return
 
-    if model_choice == "Black-Scholes (Market IV)":
+    if model_choice == "Black-Scholes":
         fig_bs_3d = plot_iv_surface_KT(
             market_surface,
             title="Market Implied Volatility Surface (K, T)"
