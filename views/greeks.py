@@ -78,11 +78,10 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
         params = HestonModel.calibrate(
             S=S,
             r=r,
-            T=T_years,
             q=q,
-            option_type=option_type,
-            position="buy",
+            option_type="call",
             K_list=strikes,
+            T_list=[T_years] * len(strikes),   
             market_prices=prices_list,
             initial_guess=initial_guess,
         )
@@ -156,12 +155,19 @@ def app():
         **Model**: **{model_name}**
         """
     )
+    if model_name == "Black-Scholes" and option_type not in ["call", "put"]:
+        st.warning(
+            "Black-Scholes Greeks are only defined for vanilla options (call / put)."
+        )
+        return
 
     # --- Greeks computation ---
     if model_name == "Heston":
+
         ok = _ensure_heston_calibrated(ticker, S, r, q, option_type)
         if not ok:
             return
+
 
         calib = st.session_state["heston_calibrated"]
         greeks = Greeks(
@@ -207,9 +213,25 @@ def app():
         return
 
     # --- Plot Greek curves ---
-    fig = greeks.plot_all_greeks()
-    st.subheader("Greek curves")
-    st.pyplot(fig)
+    is_exotic = option_type not in ["call", "put"]
+
+    if model_name == "Heston" and is_exotic:
+        st.warning(
+            "Exotic Greeks under Heston are computed by Monte Carlo finite differences. "
+            "Greek curves are disabled for performance reasons."
+        )
+        return
+    if model_name == "Gamma Variance" and is_exotic:
+        st.warning(
+            "Gamma Variance Greeks are only available for vanilla options (call / put)."
+        )
+        return
+
+    else:
+        fig = greeks.plot_all_greeks()
+        st.subheader("Greek curves")
+        st.pyplot(fig)
+
 
     # --- Display numeric Greek values ---
     greek_values = {

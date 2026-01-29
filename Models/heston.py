@@ -150,15 +150,19 @@ class HestonModel(Model):
         return S
 
     def _price_mc_vanilla(self):
+        ot = self.option_type.lower()
+        if ot not in ["call", "put"]:
+            raise ValueError(f"MC vanilla called with non-vanilla option_type: {ot}")
+
         paths = self._simulate_paths()
         ST = paths[:, -1]
-
-        if self.option_type.lower() == "call":
-            payoff = np.maximum(ST - self.K, 0.0)
-        else:
-            payoff = np.maximum(self.K - ST, 0.0)
-
+        payoff = (
+            np.maximum(ST - self.K, 0.0)
+            if ot == "call"
+            else np.maximum(self.K - ST, 0.0)
+        )
         return np.exp(-self.r * self.T) * payoff.mean()
+
 
     def _price_exotic_mc(self):
         paths = self._simulate_paths()
@@ -188,26 +192,29 @@ class HestonModel(Model):
     # ---------------- Public API ---------------- #
 
     def price(self, n=32):
-        if self.option_class.lower() == "vanilla":
+        ot = self.option_type.lower()
+
+        if ot in ["call", "put"]:
             try:
                 P1 = self._Pj(1, n)
                 P2 = self._Pj(2, n)
 
                 if not (np.isfinite(P1) and np.isfinite(P2)):
                     raise FloatingPointError
-
                 disc_r = np.exp(-self.r * self.T)
                 disc_q = np.exp(-self.q * self.T)
 
                 call = self.S * disc_q * P1 - self.K * disc_r * P2
-                price = call if self.option_type.lower() == "call" else call - self.S * disc_q + self.K * disc_r
+                price = call if ot == "call" else call - self.S * disc_q + self.K * disc_r
 
                 return self._sign() * price
 
             except Exception:
                 return self._sign() * self._price_mc_vanilla()
 
+
         return self._sign() * self._price_exotic_mc()
+
 
     def implied_volatility(self, price):
         if self.option_class.lower() != "vanilla":

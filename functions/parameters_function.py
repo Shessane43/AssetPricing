@@ -58,22 +58,37 @@ class PayoffCalculator:
     def choose_payoff(params: OptionParameters):
         S0 = params.S
         K = params.K
-        S_range = np.linspace(0.5*S0, 1.5*S0, 120)
+        option_type = params.option_type.lower()
+        position = params.buy_sell.lower()
 
-        if params.option_class == "Vanilla":
-            payoff = PayoffCalculator.vanilla_payoff(S_range, K, params.option_type)
+        S_range = np.linspace(0.5 * S0, 1.5 * S0, 120)
 
-        elif params.option_type == "Asian":
-            payoff = PayoffCalculator.asian_payoff(S_range, S0, K, params.option_type)
+        # ---------- Vanilla ----------
+        if option_type == "call":
+            payoff = np.maximum(S_range - K, 0.0)
 
-        elif params.option_type == "Lookback":
-            payoff = PayoffCalculator.lookback_payoff(S_range, K, params.option_type)
+        elif option_type == "put":
+            payoff = np.maximum(K - S_range, 0.0)
+        # ---------- Exotic (visual approximation only) ----------
+        elif option_type in ["asian_call", "call_asian"]:
+            payoff = np.maximum(S_range - K, 0.0)
 
-        if params.buy_sell == "Short":
+        elif option_type in ["asian_put", "put_asian"]:
+            payoff = np.maximum(K - S_range, 0.0)
+
+        elif option_type in ["lookback_call", "call_lookback"]:
+            payoff = np.maximum(S_range - K, 0.0)
+
+        elif option_type in ["lookback_put", "put_lookback"]:
+            payoff = np.maximum(K - S_range, 0.0)
+        else:
+            raise ValueError(f"Unsupported option_type in payoff: {option_type}")
+        # ---------- Position ----------
+        if position in ["short", "sell"]:
             payoff = -payoff
 
         return S_range, payoff
-        
+
 
 class PayoffPlotter:
 

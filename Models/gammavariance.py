@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.polynomial.laguerre import laggauss
 from Models.models import Model
-
+import streamlit as st
 
 class VarianceGamma(Model):
     """
@@ -47,6 +47,12 @@ class VarianceGamma(Model):
 
 
     def price(self, n=64):
+        if self.option_type not in ["call", "put"]:
+            st.warning(
+                "Tree models only support vanilla options (European or American call / put)."
+            )
+            return
+
         x, w = laggauss(n)
         u = x + 1e-10      
         lnK = np.log(self.K)

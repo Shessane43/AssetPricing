@@ -2,6 +2,14 @@ from Models.heston import HestonModel
 
 
 class Greeks_Heston:
+    """
+    Universal Heston Greeks via finite differences.
+
+    - Vanilla: finite differences on semi-closed Heston pricer
+    - Exotic: Monte Carlo + finite differences
+
+    Works for all option types (call, put, asian_*, lookback_*).
+    """
 
     def __init__(
         self,
@@ -26,8 +34,17 @@ class Greeks_Heston:
         self.option_type = option_type.lower()
         self.position = position.lower()
 
+        # 🔁 CHANGED: infer option_class automatically
+        self.option_class = (
+            "vanilla" if self.option_type in ["call", "put"] else "exotic"
+        )
+
     def _price(self, **kwargs):
-        return HestonModel(
+        """
+        Price wrapper used for finite differences.
+        Automatically switches to MC for exotic options.
+        """
+        model = HestonModel(
             S=kwargs.get("S", self.S),
             K=self.K,
             r=kwargs.get("r", self.r),
@@ -35,18 +52,23 @@ class Greeks_Heston:
             q=self.q,
             option_type=self.option_type,
             position=self.position,
-            option_class="vanilla",
+            option_class=self.option_class,   # 🔁 CHANGED
             v0=kwargs.get("v0", self.v0),
             kappa=self.kappa,
             theta=self.theta_v,
             sigma_v=kwargs.get("sigma_v", self.sigma_v),
             rho=kwargs.get("rho", self.rho_heston),
-        ).price()
+        )
+        return model.price()
 
-    def delta(self, h=1e-4):
+    # ---------- Greeks via finite differences ----------
+
+    def delta(self, h=None):
+        h = h or max(1e-4 * self.S, 1e-2)
         return (self._price(S=self.S + h) - self._price(S=self.S - h)) / (2 * h)
 
-    def gamma(self, h=1e-4):
+    def gamma(self, h=None):
+        h = h or max(1e-4 * self.S, 1e-2)
         return (
             self._price(S=self.S + h)
             - 2 * self._price()
@@ -54,10 +76,18 @@ class Greeks_Heston:
         ) / h**2
 
     def vega(self, h=1e-4):
+        """
+        Vega defined as sensitivity to initial variance v0.
+        (This is NOT implied-vol vega.)
+        """
         return (self._price(v0=self.v0 + h) - self._price(v0=self.v0 - h)) / (2 * h)
 
-    def theta(self, h=1e-4):
-        return -(self._price(T=self.T + h) - self._price(T=self.T - h)) / (2 * h)
+    def theta(self, h=None):
+        h = h or 1 / 365
+        Tp = self.T + h
+        Tm = max(1e-6, self.T - h)
+        dPdT = (self._price(T=Tp) - self._price(T=Tm)) / (2 * h)
+        return -dPdT   # market convention
 
     def rho(self, h=1e-4):
         return (self._price(r=self.r + h) - self._price(r=self.r - h)) / (2 * h)

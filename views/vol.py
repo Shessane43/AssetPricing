@@ -30,6 +30,13 @@ def app():
     option_type = st.session_state["option_type"].lower()
     buy_sell = st.session_state["buy_sell"]
 
+    # >>> CHANGED: IV & Heston calibration = VANILLA ONLY
+    if option_type not in ["call", "put"]:
+        st.warning(
+            "Implied volatility and Heston calibration are only defined for vanilla options (call / put)."
+        )
+        return
+
     st.markdown(
         f"""
         **Ticker**: **{ticker}**
@@ -143,11 +150,14 @@ def app():
                 st.error("Not enough calibration points.")
                 return
 
+            # >>> CHANGED: market practice → calibrate on CALLS
+            option_type_calib = "call"
+
             params = HestonModel.calibrate(
                 S=S,
                 r=r,
                 q=q,
-                option_type=option_type,
+                option_type=option_type_calib,
                 K_list=K_list,
                 T_list=T_list,
                 market_prices=P_list,
@@ -180,6 +190,10 @@ def app():
     for col, (k, v) in zip(cols, calib.items()):
         col.metric(k, f"{v:.4f}")
 
+    # >>> CHANGED: safety (still vanilla only)
+    if option_type not in ["call", "put"]:
+        st.warning("Heston implied volatility is only available for vanilla options.")
+        return
 
     vols_heston_2d = generate_heston_iv_curve(
         S=S,
@@ -208,7 +222,6 @@ def app():
         st.pyplot(fig_heston_2d)
     else:
         st.warning("Not enough valid Heston IV points for 2D smile.")
-
 
     heston_surface = {}
     for maturity, data in market_surface.items():
