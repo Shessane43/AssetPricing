@@ -27,10 +27,12 @@ Among the available features, you can:
 Here we list each page of our application along with all the functionalities they offer.
 
 ### 1. **Option Pricing**
-- Black-Scholes Model (analytical)  
+- Black-Scholes Model (analytical) 
+- Bachelier
 - Heston Model (stochastic volatility)  
 - Variance Gamma (jumps and asymmetry)  
 - Trinomial Tree (discretization)  
+- Merton Jump
 - Support for vanilla options (European Call/Put)  
 - Support for exotic options (Asian, Lookback)  
 - Long/Short positions  
@@ -64,6 +66,7 @@ Here we list each page of our application along with all the functionalities the
 - Bond futures  
 - Forward Rate Agreements (FRA)  
 - Caps and Floors  
+- Bond and Swap valuation with Hull-White and Monte Carlo simulation
 
 ### 7. **Portfolio**
 - Manage a custom portfolio  
