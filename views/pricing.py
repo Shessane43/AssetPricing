@@ -57,19 +57,17 @@ def app():
 
     if model_name == "Heston":
         st.subheader("Heston Parameters")
-
-        st.number_input("Initial variance v₀", key="v0")
-        st.number_input("Mean reversion κ", key="kappa")
-        st.number_input("Long-term variance θ", key="theta")
-        st.number_input("Vol-of-vol σᵥ", key="sigma_v")
-        st.number_input("Correlation ρ", key="rho")
+        st.number_input("Initial variance v₀", value=0.04, min_value=1e-4, key="v0")
+        st.number_input("Mean reversion κ", value=1.5,  min_value=1e-4, key="kappa")
+        st.number_input("Long-term variance θ", value=0.04, min_value=1e-4, key="theta")
+        st.number_input("Vol-of-vol σᵥ", value=0.30, min_value=1e-4, key="sigma_v")
+        st.number_input("Correlation ρ", value=-0.7, min_value=-0.95, max_value=0.95, key="rho")
 
     if model_name == "Gamma Variance":
         st.subheader("Variance Gamma Parameters")
-        st.number_input("Theta (VG)", key="theta")
-        st.number_input("Nu (VG)", key="nu")
+        st.number_input("Theta (VG)", value=0.0, step=0.05, key="theta")
+        st.number_input("Nu (VG)", min_value=1e-4, value=0.20, step=0.05, key="nu")
 
-    
     if model_name == "Trinomial Tree":
         st.subheader("Trinomial Tree Parameters")
 

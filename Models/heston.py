@@ -1,28 +1,39 @@
 import numpy as np
 from numpy.polynomial.laguerre import laggauss
 from scipy.optimize import minimize, brentq
+
 from Models.models import Model
 from Models.blackscholes import BlackScholes
 
 
 class HestonModel(Model):
-    # Cache quadrature nodes/weights for speed
+    """
+    Heston (1993)
+
+    Vanilla:
+        - Closed-form (Fourier / Laguerre)
+        - Monte Carlo fallback if unstable
+
+    Exotic (MC only):
+        - Asian (fixed strike)
+        - Lookback (fixed strike)
+    """
+
     _LAG_CACHE = {}
 
     @staticmethod
-    def _laguerre_nodes(n: int):
+    def _laguerre_nodes(n):
         if n not in HestonModel._LAG_CACHE:
             x, w = laggauss(n)
-            # store as float64
             HestonModel._LAG_CACHE[n] = (x.astype(float), w.astype(float))
         return HestonModel._LAG_CACHE[n]
 
     def __init__(
         self,
         S, K, r, T, q,
-        option_type="call",
-        position="buy",
-        option_class="vanilla",
+        option_type="call",        # call / put / asian_call / lookback_call ...
+        position="long",           
+        option_class="vanilla",    # vanilla / exotic
         v0=0.04,
         kappa=1.5,
         theta=0.04,
@@ -30,120 +41,178 @@ class HestonModel(Model):
         rho=-0.7
     ):
         super().__init__(S, K, r, T, option_type, position, option_class)
+
         self.q = q
-        self.v0 = v0
-        self.kappa = kappa
-        self.theta = theta
-        self.sigma_v = sigma_v
-        self.rho = rho
+        self.v0 = max(v0, 1e-8)
+        self.kappa = max(kappa, 1e-8)
+        self.theta = max(theta, 1e-8)
+        self.sigma_v = max(sigma_v, 1e-8)
+        self.rho = np.clip(rho, -0.999, 0.999)
+
+    # ---------------- Utilities ---------------- #
 
     def _sign(self):
-        return -1.0 if self.position == "sell" else 1.0
+        return -1.0 if self.position.lower() == "short" else 1.0
 
     def _r_adj(self):
         return self.r - self.q
 
+    # ---------------- Characteristic Function ---------------- #
+
     def _char_func(self, u, j):
+        u = np.asarray(u, dtype=np.complex128)
         i = 1j
-        tau = self.T
+        tau = float(self.T)
         x0 = np.log(self.S)
 
         u_j = 0.5 if j == 1 else -0.5
-        b_j = self.kappa - self.rho * self.sigma_v if j == 1 else self.kappa
+        b_j = (self.kappa - self.rho * self.sigma_v) if j == 1 else self.kappa
+
         a = self.kappa * self.theta
         sigma = self.sigma_v
         rho = self.rho
 
+        eps = 1e-14 + 0j
+
         d = np.sqrt(
             (rho * sigma * i * u - b_j) ** 2
-            - sigma ** 2 * (2 * u_j * i * u - u ** 2)
+            - sigma**2 * (2 * u_j * i * u - u**2)
+            + 0j
         )
 
-        g = (b_j - rho * sigma * i * u - d) / (b_j - rho * sigma * i * u + d)
+        g = (b_j - rho * sigma * i * u - d) / (b_j - rho * sigma * i * u + d + eps)
         exp_dt = np.exp(-d * tau)
+
+        one_minus_g = 1.0 - g
+        one_minus_gexp = 1.0 - g * exp_dt
+
+        log_term = np.log((one_minus_gexp + eps) / (one_minus_g + eps))
 
         C = (
             self._r_adj() * i * u * tau
-            + (a / sigma ** 2)
-            * (
-                (b_j - rho * sigma * i * u - d) * tau
-                - 2 * np.log((1 - g * exp_dt) / (1 - g))
-            )
+            + (a / sigma**2)
+            * ((b_j - rho * sigma * i * u - d) * tau - 2.0 * log_term)
         )
 
-        D = ((b_j - rho * sigma * i * u - d) / sigma ** 2) * ((1 - exp_dt) / (1 - g * exp_dt))
+        D = (b_j - rho * sigma * i * u - d) * (
+            (1.0 - exp_dt) / (sigma**2 * (one_minus_gexp + eps))
+        )
 
         return np.exp(C + D * self.v0 + i * u * x0)
+
+    # ---------------- Fourier Pricing ---------------- #
 
     def _Pj(self, j, n=32):
         x, w = self._laguerre_nodes(n)
         u = x + 1e-10
         phi = self._char_func(u, j)
-        integrand = np.real(np.exp(-1j * u * np.log(self.K)) * phi / (1j * u))
-        return 0.5 + np.sum(w * np.exp(x) * integrand) / np.pi
-        
-    def _simulate_heston_paths(self, n_paths=40_000, n_steps=200, seed=42):
-        if seed is not None:
-            np.random.seed(seed)
 
+        integrand = np.real(
+            np.exp(-1j * u * np.log(self.K)) * phi / (1j * u)
+        )
+
+        integrand = np.nan_to_num(integrand, nan=0.0, posinf=0.0, neginf=0.0)
+
+        return 0.5 + np.sum(w * np.exp(x) * integrand) / np.pi
+
+    # ---------------- Monte Carlo ---------------- #
+
+    def _simulate_paths(self, n_paths=40_000, n_steps=200, seed=42):
+        rng = np.random.default_rng(seed)
         dt = self.T / n_steps
+        sqrt_dt = np.sqrt(dt)
 
         S = np.zeros((n_paths, n_steps + 1))
         v = np.zeros((n_paths, n_steps + 1))
+
         S[:, 0] = self.S
         v[:, 0] = self.v0
 
-        Z1 = np.random.normal(size=(n_paths, n_steps))
-        Z2 = np.random.normal(size=(n_paths, n_steps))
-        Z2 = self.rho * Z1 + np.sqrt(1 - self.rho**2) * Z2
-
         for t in range(n_steps):
+            Z1 = rng.standard_normal(n_paths)
+            Z2 = rng.standard_normal(n_paths)
+            Z2 = self.rho * Z1 + np.sqrt(1 - self.rho**2) * Z2
+
             v_pos = np.maximum(v[:, t], 0.0)
 
-            v[:, t + 1] = (
+            v[:, t + 1] = np.maximum(
                 v[:, t]
                 + self.kappa * (self.theta - v_pos) * dt
-                + self.sigma_v * np.sqrt(v_pos * dt) * Z2[:, t]
+                + self.sigma_v * np.sqrt(v_pos) * sqrt_dt * Z2,
+                0.0
             )
 
             S[:, t + 1] = S[:, t] * np.exp(
                 (self.r - self.q - 0.5 * v_pos) * dt
-                + np.sqrt(v_pos * dt) * Z1[:, t]
+                + np.sqrt(v_pos) * sqrt_dt * Z1
             )
 
         return S
 
-    def _price_exotic_mc(self, n_paths=40_000, n_steps=200):
-        paths = self._simulate_heston_paths(n_paths, n_steps)
+    def _price_mc_vanilla(self):
+        paths = self._simulate_paths()
+        ST = paths[:, -1]
 
-        # Asian payoff
-        avgS = paths[:, 1:].mean(axis=1)
+        if self.option_type.lower() == "call":
+            payoff = np.maximum(ST - self.K, 0.0)
+        else:
+            payoff = np.maximum(self.K - ST, 0.0)
 
-        if self.option_type.lower() in ["asian", "call", "asian_call"]:
+        return np.exp(-self.r * self.T) * payoff.mean()
+
+    def _price_exotic_mc(self):
+        paths = self._simulate_paths()
+        ot = self.option_type.lower()
+
+        if ot in ["asian_call", "call_asian"]:
+            avgS = paths[:, 1:].mean(axis=1)
             payoff = np.maximum(avgS - self.K, 0.0)
-        elif self.option_type.lower() in ["asian_put", "put"]:
+
+        elif ot in ["asian_put", "put_asian"]:
+            avgS = paths[:, 1:].mean(axis=1)
             payoff = np.maximum(self.K - avgS, 0.0)
+
+        elif ot in ["lookback_call", "call_lookback"]:
+            Smax = paths[:, 1:].max(axis=1)
+            payoff = np.maximum(Smax - self.K, 0.0)
+
+        elif ot in ["lookback_put", "put_lookback"]:
+            Smin = paths[:, 1:].min(axis=1)
+            payoff = np.maximum(self.K - Smin, 0.0)
+
         else:
             raise ValueError(f"Unsupported exotic payoff: {self.option_type}")
 
-        return self._sign() * np.exp(-self.r * self.T) * payoff.mean()
+        return np.exp(-self.r * self.T) * payoff.mean()
+
+    # ---------------- Public API ---------------- #
 
     def price(self, n=32):
         if self.option_class.lower() == "vanilla":
-            P1 = self._Pj(1, n=n)
-            P2 = self._Pj(2, n=n)
+            try:
+                P1 = self._Pj(1, n)
+                P2 = self._Pj(2, n)
 
-            disc_r = np.exp(-self.r * self.T)
-            disc_q = np.exp(-self.q * self.T)
+                if not (np.isfinite(P1) and np.isfinite(P2)):
+                    raise FloatingPointError
 
-            call = self.S * disc_q * P1 - self.K * disc_r * P2
-            price = call if self.option_type == "call" else call - self.S * disc_q + self.K * disc_r
-            return self._sign() * price
+                disc_r = np.exp(-self.r * self.T)
+                disc_q = np.exp(-self.q * self.T)
 
-        # Exotic → Monte Carlo Heston
-        return self._price_exotic_mc()
+                call = self.S * disc_q * P1 - self.K * disc_r * P2
+                price = call if self.option_type.lower() == "call" else call - self.S * disc_q + self.K * disc_r
+
+                return self._sign() * price
+
+            except Exception:
+                return self._sign() * self._price_mc_vanilla()
+
+        return self._sign() * self._price_exotic_mc()
 
     def implied_volatility(self, price):
+        if self.option_class.lower() != "vanilla":
+            return np.nan
+
         target = price * self._sign()
 
         def f(sig):
@@ -207,7 +276,7 @@ class HestonModel(Model):
                     model = HestonModel(
                         S, K, r, T, q,
                         option_type=option_type,
-                        position="buy",
+                        position="long",
                         option_class="vanilla",
                         v0=v0, kappa=kappa, theta=theta,
                         sigma_v=sigma_v, rho=rho

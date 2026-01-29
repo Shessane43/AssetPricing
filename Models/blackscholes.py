@@ -39,7 +39,7 @@ class BlackScholes(Model):
             delta = np.exp(-self.q * self.T) * norm.cdf(d1)
         else:
             delta = np.exp(-self.q * self.T) * (norm.cdf(d1) - 1)
-        return -delta if self.buy_sell == "sell" else delta
+        return -delta if self.buy_sell == "short" else delta
     
     def lists_delta(self, points = 0.3, number = 100, h=1e-4):
         delta_list = []
@@ -53,7 +53,7 @@ class BlackScholes(Model):
     def gamma(self):
         d1 = (np.log(self.S / self.K) + (self.r - self.q + 0.5 * self.sigma**2) * self.T) / (self.sigma * np.sqrt(self.T))
         gamma = (np.exp(-self.q * self.T) * norm.pdf(d1)) / (self.S * self.sigma * np.sqrt(self.T))
-        return -gamma if self.buy_sell == "sell" else gamma
+        return -gamma if self.buy_sell == "short" else gamma
     
     def lists_gamma(self, points = 0.3, number= 100, h=1e-4):
         gamma_list = []
@@ -67,7 +67,7 @@ class BlackScholes(Model):
     def vega(self):
         d1 = (np.log(self.S / self.K) + (self.r - self.q + 0.5 * self.sigma**2) * self.T) / (self.sigma * np.sqrt(self.T))
         vega = self.S * np.exp(-self.q * self.T) * norm.pdf(d1) * np.sqrt(self.T)
-        return -vega if self.buy_sell == "sell" else vega
+        return -vega if self.buy_sell == "short" else vega
     
     def lists_vega(self, points = 0.3, number= 100, h=1e-4):
         vega_list = []
@@ -89,7 +89,7 @@ class BlackScholes(Model):
             theta = (- (self.S * norm.pdf(d1) * self.sigma * np.exp(-self.q * self.T)) / (2 * np.sqrt(self.T))
                      + self.r * self.K * np.exp(-self.r * self.T) * norm.cdf(-d2)
                      - self.q * self.S * np.exp(-self.q * self.T) * norm.cdf(-d1))
-        return -theta if self.buy_sell == "sell" else theta
+        return -theta if self.buy_sell == "short" else theta
     
     def lists_theta(self, points = 0.3, number= 100, h=1e-4):
         theta_list = []
@@ -107,7 +107,7 @@ class BlackScholes(Model):
             rho = self.K * self.T * np.exp(-self.r * self.T) * norm.cdf(d2)
         else:
             rho = -self.K * self.T * np.exp(-self.r * self.T) * norm.cdf(-d2)
-        return -rho if self.buy_sell == "sell" else rho
+        return -rho if self.buy_sell == "short" else rho
     
     def lists_rho(self, points = 0.3, number= 100, h=1e-4):
         rho_list = []

@@ -315,7 +315,7 @@ def generate_heston_iv_curve(S, r, q, option_type, strikes, T, heston_params, He
             m = HestonModel(
                 float(S), float(K), float(r), float(T), float(q),
                 option_type=option_type,
-                position="buy",
+                position="long",
                 option_class="vanilla",
                 **heston_params
             )
