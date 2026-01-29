@@ -115,19 +115,7 @@ def _mid_price_from_row(row) -> float:
     return np.nan
 
 
-<<<<<<< HEAD
-
-
 def get_market_prices_yahoo(ticker, T_days=None):
-=======
-def get_all_option_maturities(ticker: str):
-    stock = yf.Ticker(ticker)
-    maturities = getattr(stock, "options", None)
-    return maturities if maturities else []
-
-
-def get_market_prices_yahoo(ticker: str, T_days: int = None):
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
     stock = yf.Ticker(ticker)
     dates = getattr(stock, "options", None)
     if not dates:
@@ -177,7 +165,6 @@ def generate_vol_curve(S, maturity_date, r, q, market_calls, market_puts, option
         c = market_calls.get(K, np.nan)
         p = market_puts.get(K, np.nan)
 
-<<<<<<< HEAD
         # OTM selection (recommended)
         if K >= F:   # use calls
             if np.isfinite(c) and c > 0:
@@ -189,37 +176,9 @@ def generate_vol_curve(S, maturity_date, r, q, market_calls, market_puts, option
     strikes_out = sorted(prices.keys())
     vols = [implied_volatility(S, K, T, r, q, prices[K], "call" if K>=F else "put")
             for K in strikes_out]
-=======
-        if option_type == "call":
-            if c is not None and np.isfinite(c):
-                price = float(c)
-                if p is not None and np.isfinite(p):
-                    c_par = float(p + (S * disc_q - K * disc_r))
-                    price = 0.5 * (price + c_par)
-                prices_for_type[K] = float(price)
-            elif p is not None and np.isfinite(p):
-                prices_for_type[K] = float(p + (S * disc_q - K * disc_r))
-        else:
-            if p is not None and np.isfinite(p):
-                price = float(p)
-                if c is not None and np.isfinite(c):
-                    p_par = float(c + (K * disc_r - S * disc_q))
-                    price = 0.5 * (price + p_par)
-                prices_for_type[K] = float(price)
-            elif c is not None and np.isfinite(c):
-                prices_for_type[K] = float(c + (K * disc_r - S * disc_q))
-
-    strikes_out = sorted(prices_for_type.keys())
-    vols = [
-        implied_volatility_bs(S, K, T, r, q, prices_for_type[K], option_type)
-        for K in strikes_out
-    ]
-    return strikes_out, vols, T, prices_for_type
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
     return strikes_out, vols, T, prices
 
-<<<<<<< HEAD
 # ----------------------------
 # 2D plot
 # ----------------------------
@@ -239,28 +198,6 @@ def smooth_vol_curve(strikes, vols, num_points=120, smoothing_factor=1.0):
     vols_new = np.exp(spline(x_new))
     return x_new, vols_new
 
-=======
-def clean_iv_points(S, strikes, vols, T, r, q,
-                    vega_min=1e-4, iv_min=0.01, iv_max=3.0):
-    strikes = np.asarray(strikes, dtype=float)
-    vols = np.asarray(vols, dtype=float)
-
-    mask = np.isfinite(vols)
-    strikes = strikes[mask]
-    vols = vols[mask]
-
-    K_clean, iv_clean = [], []
-    for K, iv in zip(strikes, vols):
-        if not (iv_min <= iv <= iv_max):
-            continue
-        vega = bs_vega(S, K, T, r, q, iv)
-        if vega < vega_min:
-            continue
-        K_clean.append(float(K))
-        iv_clean.append(float(iv))
-
-    return np.asarray(K_clean), np.asarray(iv_clean)
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
 
 def smooth_smile_in_strike(S, strikes, vols, T, r, q, num_points=140, smoothing_factor=0.8):
@@ -337,7 +274,6 @@ def plot_iv_surface_KT(vol_curves, grid_K=70, grid_T=45, rbf_smooth=0.2, title="
     T_grid = np.linspace(Ts.min(), Ts.max(), int(grid_T))
     K_mesh, T_mesh = np.meshgrid(K_grid, T_grid)
 
-<<<<<<< HEAD
     try:
         Y = griddata((all_strikes, all_T), all_vols, (X, Z), method="linear")
         Y2 = griddata((all_strikes, all_T), all_vols, (X, Z), method="nearest")
@@ -345,10 +281,6 @@ def plot_iv_surface_KT(vol_curves, grid_K=70, grid_T=45, rbf_smooth=0.2, title="
     except Exception:
         Y = griddata((all_strikes, all_T), all_vols, (X, Z), method="nearest")
 
-=======
-    rbf = Rbf(Ks, Ts, IVs, function="multiquadric", smooth=float(rbf_smooth))
-    Z = rbf(K_mesh, T_mesh)
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
     fig = go.Figure(data=[go.Surface(x=K_mesh, y=T_mesh, z=Z)])
     fig.update_layout(
