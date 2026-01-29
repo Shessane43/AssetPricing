@@ -90,7 +90,7 @@ def app():
             key="exotic_cp"
         )
 
-        # 🔥 mapping EXACT attendu par Heston / pricing engine
+
         st.session_state.option_type = f"{exotic_family.lower()}_{exotic_cp.lower()}"
 
     # -------- Numeric parameters --------
@@ -114,7 +114,7 @@ def app():
         sigma=st.session_state.sigma,
         q=st.session_state.q,
         option_class=st.session_state.option_class,
-        option_type=st.session_state.option_type,   # ✅ engine-ready
+        option_type=st.session_state.option_type,   
         buy_sell=st.session_state.buy_sell
     )
 

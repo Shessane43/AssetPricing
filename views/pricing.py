@@ -2,6 +2,7 @@ import streamlit as st
 from functions.pricing_function import price_option, MODELS
 from functions.model_explanations import MODEL_EXPLANATIONS
 
+
 def app():
 
     required_keys = [
@@ -43,22 +44,18 @@ def app():
     st.subheader("Pricing Model")
     model_name = st.selectbox("Select model", list(MODELS.keys()))
     st.session_state["model_name"] = model_name
-    show_explanation = st.checkbox(
-        "Show model explanation",
-        value=False
-    )
+
+    show_explanation = st.checkbox("Show model explanation", value=False)
     if show_explanation and model_name in MODEL_EXPLANATIONS:
         st.markdown("---")
-        st.markdown(
-            MODEL_EXPLANATIONS[model_name],
-            unsafe_allow_html=False
-        )
+        st.markdown(MODEL_EXPLANATIONS[model_name], unsafe_allow_html=False)
 
+    # ---------------- Model parameters ----------------
 
     if model_name == "Heston":
         st.subheader("Heston Parameters")
         st.number_input("Initial variance v₀", value=0.04, min_value=1e-4, key="v0")
-        st.number_input("Mean reversion κ", value=1.5,  min_value=1e-4, key="kappa")
+        st.number_input("Mean reversion κ", value=1.5, min_value=1e-4, key="kappa")
         st.number_input("Long-term variance θ", value=0.04, min_value=1e-4, key="theta")
         st.number_input("Vol-of-vol σᵥ", value=0.30, min_value=1e-4, key="sigma_v")
         st.number_input("Correlation ρ", value=-0.7, min_value=-0.95, max_value=0.95, key="rho")
@@ -70,7 +67,6 @@ def app():
 
     if model_name == "Trinomial Tree":
         st.subheader("Trinomial Tree Parameters")
-
         st.slider(
             "Number of steps",
             min_value=50,
@@ -84,7 +80,27 @@ def app():
             horizontal=True,
             key="exercise",
         )
- 
+
+    if model_name == "Merton Jump Diffusion":
+        st.subheader("Merton Jump Diffusion Parameters")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.number_input("Jump intensity λ", value=0.2, min_value=0.0, key="lambd")
+            st.number_input("Jump mean μ_J", value=-0.1, key="mu_j")
+        with col2:
+            st.number_input("Jump volatility σ_J", value=0.3, min_value=1e-4, key="sigma_j")
+
+    # ---------------- Compatibility checks ----------------
+
+    if model_name in [
+        "Black-Scholes", "Bachelier",
+        "Gamma Variance", "Merton Jump Diffusion", "Trinomial Tree"
+    ] and option_type not in ["call", "put"]:
+        st.warning(f"{model_name} only supports vanilla call / put options.")
+        return
+
+    # ---------------- Pricing ----------------
+
     if st.button("Compute Price"):
 
         params = {
@@ -107,15 +123,24 @@ def app():
                 "sigma_v": st.session_state["sigma_v"],
                 "rho": st.session_state["rho"],
             })
+
         elif model_name == "Gamma Variance":
             params.update({
                 "theta": st.session_state["theta"],
                 "nu": st.session_state["nu"],
             })
+
         elif model_name == "Trinomial Tree":
             params.update({
                 "n_steps": st.session_state["n_steps"],
                 "exercise": st.session_state["exercise"].lower(),
+            })
+
+        elif model_name == "Merton Jump Diffusion":
+            params.update({
+                "lambd": st.session_state["lambd"],
+                "mu_j": st.session_state["mu_j"],
+                "sigma_j": st.session_state["sigma_j"],
             })
 
         try:
@@ -123,6 +148,7 @@ def app():
             st.success(f"Price ({model_name}): **{price:.4f}**")
         except Exception as e:
             st.error(f"Pricing error: {e}")
+
     if st.button("← Back to Home"):
         st.session_state.page = "home"
         st.rerun()

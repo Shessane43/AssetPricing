@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="Asset Pricing Application",
+    page_title="",
     layout="wide",
     initial_sidebar_state="collapsed"
 )

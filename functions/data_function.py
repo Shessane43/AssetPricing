@@ -54,8 +54,8 @@ class MarketData:
 
         # --- Figure setup ---
         fig, ax = plt.subplots(figsize=(10, 5))
-        fig.patch.set_facecolor("black")
-        ax.set_facecolor("black")
+        fig.patch.set_facecolor("#0e1117")
+        ax.set_facecolor("#0e1117")
 
         # --- Plot closing price ---
         ax.plot(data.index, data["Close"], color="orange", linewidth=2, label="Close Price")
@@ -64,12 +64,12 @@ class MarketData:
         for side in ("bottom", "top", "left", "right"):
             ax.spines[side].set_color("orange")
         ax.tick_params(colors="orange")
-        ax.set_xlabel("Date", color="orange")
-        ax.set_ylabel("Price ($)", color="orange")
+        ax.set_xlabel("Date", color="white")
+        ax.set_ylabel("Price ($)", color="white")
         ax.grid(True, linestyle="--", color="orange", alpha=0.3)
 
         # --- Legend styling ---
-        legend = ax.legend(facecolor="black", edgecolor="orange")
+        legend = ax.legend(facecolor="#0e1117", edgecolor="white")
         for text in legend.get_texts():
             text.set_color("orange")
 
