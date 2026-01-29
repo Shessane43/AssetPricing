@@ -16,8 +16,8 @@ from functions.vol_function import (
 
 
 def app():
-
-    if "ticker" not in st.session_state:
+    
+    if "ticker" not in st.session_state or "S" not in st.session_state:
         st.info("Select a ticker first.")
         return
 
@@ -30,7 +30,6 @@ def app():
     option_type = st.session_state["option_type"].lower()
     buy_sell = st.session_state["buy_sell"]
 
-    # >>> CHANGED: IV & Heston calibration = VANILLA ONLY
     if option_type not in ["call", "put"]:
         st.warning(
             "Implied volatility and Heston calibration are only defined for vanilla options (call / put)."
@@ -150,7 +149,6 @@ def app():
                 st.error("Not enough calibration points.")
                 return
 
-            # >>> CHANGED: market practice → calibrate on CALLS
             option_type_calib = "call"
 
             params = HestonModel.calibrate(
@@ -190,7 +188,6 @@ def app():
     for col, (k, v) in zip(cols, calib.items()):
         col.metric(k, f"{v:.4f}")
 
-    # >>> CHANGED: safety (still vanilla only)
     if option_type not in ["call", "put"]:
         st.warning("Heston implied volatility is only available for vanilla options.")
         return

@@ -234,23 +234,26 @@ def plot_vol_curve(S, strikes, vols, maturity=None, K=None, T=None, r=None, q=No
     vols = np.asarray(vols, dtype=float)
 
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.scatter(strikes, vols, marker="x", s=60, label="IV points")
+    # --- Dark theme ---
+    fig.patch.set_facecolor("#0e1117")
+    ax.set_facecolor("#0e1117")
+    ax.scatter(strikes, vols, marker="x", s=70, color='orange', label="IV points")
 
     if T is not None and r is not None and q is not None and strikes.size >= 5:
         K_s, iv_s = smooth_smile_in_strike(S, strikes, vols, T, r, q)
-        ax.plot(K_s, iv_s, lw=2, label="Vega-weighted spline")
+        ax.plot(K_s, iv_s, lw=2,color ='orange' ,label="Vega-weighted spline")
 
         if K is not None:
             iv_at_K = np.interp(float(K), K_s, iv_s)
-            ax.axvline(float(K), linestyle="--", lw=1.5, alpha=0.8)
-            ax.scatter([float(K)], [iv_at_K], s=80, zorder=5, label=f"IV@K≈{iv_at_K:.4f}")
+            ax.axvline(float(K), linestyle="--",color='orange', lw=1.5, alpha=0.8)
+            ax.scatter([float(K)], [iv_at_K], s=80, zorder=5,color = 'orange', label=f"IV@K≈{iv_at_K:.4f}")
 
     full_title = title
     if maturity is not None:
         full_title += f" — maturity: {maturity}"
-    ax.set_title(full_title)
-    ax.set_xlabel("Strike K")
-    ax.set_ylabel("Implied Volatility")
+    ax.set_title(full_title,color='white')
+    ax.set_xlabel("Strike K",color='white')
+    ax.set_ylabel("Implied Volatility",color='white')
     ax.grid(True, linestyle="--", alpha=0.3)
     ax.legend()
     return fig

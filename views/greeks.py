@@ -30,13 +30,11 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
 
     st.warning("Heston not calibrated yet.")
 
-    # --- Get available option maturities ---
     maturities = get_all_option_maturities(ticker)
     if not maturities:
         st.error("No option maturities available for calibration.")
         return False
 
-    # --- User selects maturity ---
     maturity_choice = st.selectbox(
         "Choose maturity used for Heston calibration",
         maturities,
@@ -44,7 +42,6 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
         key="heston_calib_maturity_choice",
     )
 
-    # --- Get market prices for calibration ---
     T_days = (pd.to_datetime(maturity_choice) - pd.Timestamp.today()).days
     calls, puts, maturity_real = get_market_prices_yahoo(ticker, T_days=T_days)
 
@@ -60,7 +57,6 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
 
     prices_list = [prices[k] for k in strikes]
 
-    # --- Calibration parameter inputs ---
     with st.expander("Calibration settings", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
@@ -73,7 +69,6 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
 
         initial_guess = [v0, kappa, theta, sigma_v, rho]
 
-    # --- Calibration button ---
     if st.button("Calibrate Heston now", type="primary"):
         params = HestonModel.calibrate(
             S=S,
@@ -86,7 +81,6 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
             initial_guess=initial_guess,
         )
 
-        # --- Save calibrated parameters in session_state ---
         st.session_state["heston_calibrated"] = {
             "v0": float(params[0]),
             "kappa": float(params[1]),
@@ -118,7 +112,6 @@ def app():
         st.warning("Please set parameters first.")
         return
 
-    # --- Retrieve parameters from session ---
     ticker = st.session_state["ticker"]
     S = float(st.session_state["S"])
     K = float(st.session_state["K"])
@@ -129,7 +122,6 @@ def app():
     option_type = st.session_state["option_type"].lower()
     position = st.session_state["buy_sell"].lower()
 
-    # --- Model selection ---
     st.subheader("Greeks")
     model_name = st.radio(
         "Greek model",
@@ -137,7 +129,6 @@ def app():
         horizontal=True,
     )
 
-    # --- Display basic info ---
     st.markdown(
         f"""
         **Ticker**: **{ticker}**
@@ -161,7 +152,6 @@ def app():
         )
         return
 
-    # --- Greeks computation ---
     if model_name == "Heston":
 
         ok = _ensure_heston_calibrated(ticker, S, r, q, option_type)
@@ -212,7 +202,6 @@ def app():
         st.info("Gamma Variance: please provide (theta, nu) inputs here if you want it.")
         return
 
-    # --- Plot Greek curves ---
     is_exotic = option_type not in ["call", "put"]
 
     if model_name == "Heston" and is_exotic:
@@ -232,8 +221,6 @@ def app():
         st.subheader("Greek curves")
         st.pyplot(fig)
 
-
-    # --- Display numeric Greek values ---
     greek_values = {
         "Delta": greeks.delta(),
         "Gamma": greeks.gamma(),
@@ -246,7 +233,6 @@ def app():
     for col, (name, val) in zip(cols, greek_values.items()):
         col.metric(name, f"{float(val):.4f}")
 
-    # --- Navigation ---
     if st.button("← Back to Home"):
         st.session_state.page = "home"
         st.rerun()

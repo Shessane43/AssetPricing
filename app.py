@@ -6,7 +6,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# -------------------- GLOBAL STYLE --------------------
 st.markdown("""
 <div style="text-align:center;margin-top:10px;margin-bottom:10px">
   <div style="font-size:52px;font-weight:800;color:#e6edf3;">Asset Pricing Application</div>
@@ -19,11 +18,9 @@ st.markdown("""
 st.markdown("<hr style='border:0;height:1px;background:rgba(255,255,255,0.08);margin:18px 0 24px 0'/>", unsafe_allow_html=True)
 
 
-# -------------------- SESSION DEFAULTS --------------------
 if "ticker" not in st.session_state:
     st.session_state.ticker = "AAPL"
 
-# -------------------- IMPORT PAGES --------------------
 from views import (
     accueil,
     data,
@@ -37,7 +34,6 @@ from views import (
     parametre,
 )
 
-# -------------------- NAV STRUCTURE --------------------
 SECTIONS = {
     "Home": [],
     "Derivatives": [
@@ -51,18 +47,18 @@ SECTIONS = {
         "Volatility Simulation",
     ],
     "Fixed Income": [
-        "Bond & Swap",
+       
     ],
     "Structured Products": [
-        "Structured Products",
+       
     ],
     "Portfolio": [
-        "My Portfolio",
+       
     ],
 }
 
 st.markdown("<h1 style='text-align:center'>Asset Pricing Application</h1>", unsafe_allow_html=True)
-# -------------------- HANDLE NAV FROM HOME --------------------
+
 if "__nav_target__" in st.session_state:
     target_main, target_sub = st.session_state.pop("__nav_target__")
 
@@ -84,8 +80,6 @@ if SECTIONS[main_section]:
         key="sub_section"
     )
 
-
-# -------------------- ROUTING --------------------
 if main_section == "Home":
     accueil.app()
 

@@ -1,15 +1,11 @@
 import numpy as np
 from numpy.polynomial.laguerre import laggauss
 from Models.models import Model
-import streamlit as st
+
 
 class VarianceGamma(Model):
     """
     Variance Gamma model (Madan–Carr–Chang)
-
-    Constraints:
-        sigma > 0
-        nu > 0
     """
 
     def __init__(
@@ -18,18 +14,14 @@ class VarianceGamma(Model):
         sigma,
         theta,
         nu,
-        option_type="call",  
-        position="long"       
+        option_type="call",
+        position="long"   # conservé pour compatibilité, mais ignoré
     ):
         super().__init__(S, K, r, T, option_type, position, "vanilla")
 
         self.sigma = max(float(sigma), 1e-8)
-        self.nu = max(float(nu), 1e-8)     
+        self.nu = max(float(nu), 1e-8)
         self.theta = float(theta)
-
-    def _sign(self):
-        return -1.0 if self.position.lower() == "short" else 1.0
-
 
     def char_func(self, u):
         u = np.asarray(u, dtype=np.complex128)
@@ -45,16 +37,14 @@ class VarianceGamma(Model):
 
         return np.exp(i * u * drift) * denom ** (-self.T / self.nu)
 
-
     def price(self, n=64):
         if self.option_type not in ["call", "put"]:
-            st.warning(
-                "Tree models only support vanilla options (European or American call / put)."
+            raise ValueError(
+                "Variance Gamma pricing is only defined for vanilla call / put."
             )
-            return
 
         x, w = laggauss(n)
-        u = x + 1e-10      
+        u = x + 1e-10
         lnK = np.log(self.K)
 
         phi = self.char_func(u - 1j)
@@ -63,13 +53,12 @@ class VarianceGamma(Model):
             np.exp(-1j * u * lnK) * phi / (1j * u)
         )
 
-        integrand = np.nan_to_num(
-            integrand, nan=0.0, posinf=0.0, neginf=0.0
-        )
+        integrand = np.nan_to_num(integrand, nan=0.0, posinf=0.0, neginf=0.0)
 
         call_price = np.exp(-self.r * self.T) * np.sum(w * integrand) / np.pi
 
-        if self.option_type.lower() == "put":
+        if self.option_type == "put":
             call_price = call_price - self.S + self.K * np.exp(-self.r * self.T)
 
-        return self._sign() * call_price
+        # sécurité numérique
+        return max(float(call_price), 0.0)
