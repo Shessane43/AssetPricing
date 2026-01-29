@@ -1,43 +1,44 @@
 # functions/portfolio_function.py
 import numpy as np
 import pandas as pd
-from functions.pricing_function import price_option, MODELS
+from functions.pricing_function import price_option
 from functions.greeks_function import Greeks
 
-# ----------------- Portfolio management -----------------
+# ----------------- Portfolio Management -----------------
 def add_position(portfolio, position):
     """
-    Adds a position to the portfolio and calculates the price paid.
+    Add a new position to the portfolio.
 
     Parameters
     ----------
-    portfolio : list of dict
-        Current portfolio positions.
+    portfolio : list
+        List of existing positions (each position is a dict).
     position : dict
-        Dictionary describing the new position, e.g.:
-        {
-            "position_type": "Option" or "Stock",
-            "S": spot price,
-            "K": strike (for options),
-            "T": maturity (for options),
-            "r": risk-free rate,
-            "sigma": volatility (optional),
-            "option_type": "Call" or "Put",
-            "option_class": "Vanilla", etc.
-        }
+        Position to add. Must contain at least:
+        - instrument_type : "Stock" or "Option"
+        - qty : signed quantity (positive = long, negative = short)
 
-    Returns
-    -------
-    list of dict
-        Updated portfolio including the new position with "price_paid" added.
+    Notes
+    -----
+    - buy_sell is stored as a string:
+        "buy"  -> Long position
+        "sell" -> Short position
+    - price_paid is always stored as a positive number (cash outflow).
+    - price (market value) reflects the sign of the position via qty.
     """
     pos = position.copy()
     qty = pos.get("qty", 1)
 
-    if pos.get("position_type", "Option") == "Stock":
-        pos["price_paid"] = pos["S"] * qty
+    # Convert quantity sign into buy/sell flag
+    buy_sell_flag = "buy" if qty > 0 else "sell"
+    pos["buy_sell"] = buy_sell_flag
+
+    if pos.get("instrument_type") == "Stock":
+        # Cost is always positive, market value reflects long/short
+        pos["price_paid"] = pos.get("S", 0) * abs(qty)
+        pos["price"] = pos.get("S", 0) * qty
     else:
-        # Calculate option price paid
+        # Option pricing parameters
         params = {
             "S": pos["S"],
             "K": pos["K"],
@@ -46,69 +47,71 @@ def add_position(portfolio, position):
             "sigma": pos.get("sigma", 0.2),
             "q": pos.get("q", 0.0),
             "option_type": pos.get("option_type", "Call"),
-            "buy_sell": "Long",
+            "buy_sell": buy_sell_flag,
             "option_class": pos.get("option_class", "Vanilla")
         }
         model_name = pos.get("model_name", "Black-Scholes")
+
         try:
-            pos["price_paid"] = price_option(model_name, params) * qty
+            price = price_option(model_name, params)
         except Exception:
-            pos["price_paid"] = 0
+            price = 0
+
+        # Market value uses signed quantity
+        pos["price"] = price * qty
+        # Paid cost is always positive
+        pos["price_paid"] = price * abs(qty)
 
     portfolio.append(pos)
     return portfolio
 
+
 def remove_position(portfolio, index):
     """
-    Removes a position from the portfolio by index.
+    Remove a position from the portfolio by index.
 
     Parameters
     ----------
-    portfolio : list of dict
-        Current portfolio.
+    portfolio : list
+        Portfolio of positions.
     index : int
         Index of the position to remove.
-
-    Returns
-    -------
-    list of dict
-        Updated portfolio after removal.
     """
     if 0 <= index < len(portfolio):
         portfolio.pop(index)
     return portfolio
 
-# ----------------- Pricing per position -----------------
+
+# ----------------- Prices and Greeks -----------------
 def calculate_prices_and_greeks(portfolio):
     """
-    Calculates current price for each position in the portfolio.
+    Compute individual prices (market values) and display information
+    for each position in the portfolio.
 
     Parameters
     ----------
-    portfolio : list of dict
-        Portfolio positions.
+    portfolio : list
+        Portfolio of positions.
 
     Returns
     -------
     pandas.DataFrame
-        DataFrame with pricing information per position, including
-        columns: Position, Type, Spot, Strike, Maturity, Volatility, Price, Quantity, Dividend, etc.
+        Table containing position info, prices, and parameters.
     """
     results = []
 
     for pos in portfolio:
         res = pos.copy()
         qty = pos.get("qty", 1)
+        buy_sell_flag = pos.get("buy_sell", "buy")
 
-        # LONG / SHORT
-        res["position_type"] = "Long" if qty > 0 else "Short"
+        res["Position"] = buy_sell_flag
 
-        # OPTION / STOCK
-        if pos.get("position_type") == "Stock":
-            res["option_type"] = "Stock"
-            res["price"] = pos["S"] * qty
+        if pos.get("instrument_type") == "Stock":
+            res["Type"] = "Stock"
+            res["Price"] = pos.get("S", 0) * qty
         else:
-            res["option_type"] = pos.get("option_type", "Call")
+            res["Type"] = pos.get("option_type", "Call")
 
             params = {
                 "S": pos["S"],
@@ -118,56 +121,53 @@ def calculate_prices_and_greeks(portfolio):
                 "sigma": pos.get("sigma", 0.2),
                 "q": pos.get("q", 0.0),
                 "option_type": pos.get("option_type", "Call"),
-                "buy_sell": "Long",
+                "buy_sell": buy_sell_flag,
                 "option_class": pos.get("option_class", "Vanilla")
             }
-
             model_name = pos.get("model_name", "Black-Scholes")
+
             try:
-                res["price"] = price_option(model_name, params) * qty
+                res["Price"] = price_option(model_name, params) * qty
             except Exception:
-                res["price"] = 0.0
+                res["Price"] = 0
 
         results.append(res)
 
-    # Convert to DataFrame
     df = pd.DataFrame(results)
 
-    # Reorder columns for display
-    cols = ["position_type", "option_type"] + [c for c in df.columns if c not in ["position_type", "option_type"]]
+    # Reorder and rename columns for display
+    cols = ["Position", "Type"] + [c for c in df.columns if c not in ["Position", "Type"]]
     df = df[cols]
 
-    # Rename columns for cleaner display
-    rename_dict = {
-        "position_type": "Position",
-        "option_type": "Type",
+    df.rename(columns={
         "ticker": "Ticker",
         "S": "Spot",
         "K": "Strike",
         "T": "Maturity",
         "sigma": "Volatility",
-        "price": "Price",
+        "price_paid": "Cost",
         "qty": "Quantity",
         "q": "Dividend"
-    }
-    df.rename(columns=rename_dict, inplace=True)
+    }, inplace=True)
 
     return df
+
 
 # ----------------- Portfolio Greeks -----------------
 def calculate_portfolio_greeks(portfolio):
     """
-    Calculates aggregate Greeks for the portfolio.
+    Aggregate Greeks at the portfolio level.
 
     Parameters
     ----------
-    portfolio : list of dict
-        Portfolio positions.
+    portfolio : list
+        Portfolio of positions.
 
     Returns
     -------
     pandas.DataFrame
-        Single-row DataFrame with total delta, gamma, vega, theta, and rho.
+        One-row DataFrame containing total:
+        delta, gamma, vega, theta, rho
     """
     total_delta = 0
     total_gamma = 0
@@ -176,9 +176,14 @@ def calculate_portfolio_greeks(portfolio):
     total_rho   = 0
 
     for pos in portfolio:
-        qty = pos.get("qty", 1)
+        qty = pos.get("qty")
+        buy_sell_flag = pos.get("buy_sell", "buy")
 
-        if pos.get("position_type", "Option") == "Stock":
+        # Sign convention for long/short
+        sign = 1 if buy_sell_flag == "buy" else -1
+
+        if pos.get("instrument_type") == "Stock":
+            # Stock delta = 1 per share
             total_delta += qty
         else:
             try:
@@ -190,13 +195,15 @@ def calculate_portfolio_greeks(portfolio):
                     T=pos["T"],
                     r=pos["r"],
                     sigma=pos.get("sigma", 0.2),
-                    buy_sell="Long" if qty > 0 else "Short"
+                    buy_sell=buy_sell_flag
                 )
-                total_delta += g.delta() * qty
+
+                total_delta += g.delta() * qty * sign
                 total_gamma += g.gamma() * qty
                 total_vega  += g.vega() * qty
                 total_theta += g.theta() * qty
                 total_rho   += g.rho() * qty
+
             except Exception:
                 pass
 
@@ -208,23 +215,21 @@ def calculate_portfolio_greeks(portfolio):
         "rho": total_rho
     }])
 
-# ----------------- Total portfolio value -----------------
+
+# ----------------- Portfolio Value -----------------
 def calculate_portfolio_value(portfolio):
     """
-    Computes total market value and total cost of the portfolio.
+    Compute total portfolio market value and total cost.
 
     Parameters
     ----------
-    portfolio : list of dict
-        Portfolio positions.
+    portfolio : list
+        Portfolio of positions.
 
     Returns
     -------
     tuple
-        total_market_value : float
-            Current market value of the portfolio.
-        total_cost : float
-            Total amount paid to acquire the positions.
+        (total_market_value, total_cost)
     """
     total_market_value = 0.0
     total_cost = 0.0
@@ -232,45 +237,59 @@ def calculate_portfolio_value(portfolio):
     for pos in portfolio:
         qty = pos.get("qty", 1)
 
-        if pos.get("position_type", "Option") == "Stock":
-            price = pos.get("S", 0)
-            cost = pos.get("price_paid", price)
+        if pos.get("instrument_type") == "Stock":
+            spot = pos.get("S", 0)
+            total_market_value += spot * qty
+            total_cost += pos.get("price_paid", abs(qty) * spot)
         else:
-            price = pos.get("price", 0)
-            cost = pos.get("price_paid", 0)
-
-        total_market_value += price * qty
-        total_cost += cost
+            total_market_value += pos.get("price", 0)
+            total_cost += pos.get("price_paid", 0)
 
     return total_market_value, total_cost
 
+
+# ----------------- Delta Hedge -----------------
 def delta_hedge_portfolio(portfolio, ticker):
     """
-    Adds a stock position to delta-hedge the portfolio (~delta = 0).
+    Delta-hedge the portfolio using the underlying stock.
 
     Parameters
     ----------
-    portfolio : list of dict
-        Portfolio positions.
+    portfolio : list
+        Portfolio of positions.
     ticker : str
-        Ticker of the stock to use for hedging.
+        Ticker of the underlying used for hedging.
 
-    Returns
-    -------
-    list of dict
-        Updated portfolio including the delta-hedge stock position.
+    Notes
+    -----
+    - Existing hedge positions are removed.
+    - A new stock position is added with quantity = -total_delta
+      in order to neutralize portfolio delta.
     """
+    # Remove existing hedges
+    portfolio = [p for p in portfolio if p.get("Position") != "Hedge"]
+
     greeks = calculate_portfolio_greeks(portfolio)
     total_delta = greeks.loc[0, "delta"]
 
-    if abs(total_delta) < 1e-4:
+    # Already delta-neutral
+    if abs(total_delta) < 1e-8:
         return portfolio
 
+    # Find spot price of the underlying
+    spot = next((p["S"] for p in portfolio if p.get("ticker") == ticker), 0)
+
+    hedge_qty = -total_delta
+
     hedge_position = {
-        "position_type": "Stock",
+        "instrument_type": "Stock",
         "ticker": ticker,
-        "S": next(p["S"] for p in portfolio if p["ticker"] == ticker),
-        "qty": -total_delta
+        "S": spot,
+        "qty": hedge_qty,
+        "buy_sell": "buy" if hedge_qty > 0 else "sell",
+        "Position": "Hedge",
+        "price": spot * hedge_qty,
+        "price_paid": spot * hedge_qty
     }
 
     portfolio.append(hedge_position)
