@@ -102,13 +102,24 @@ def _mid_price_from_row(row) -> float:
     ask = row.get("ask", np.nan)
     last = row.get("lastPrice", np.nan)
 
+    # Preferred: bid/ask mid
     if pd.notna(bid) and pd.notna(ask) and bid > 0 and ask > 0:
-        return float(0.5 * (bid + ask))
+        mid = 0.5 * (bid + ask)
+        if (ask - bid) / max(mid, 1e-12) < 0.50:   # 50% spread tol
+            return float(mid)
+
+    # Fallback: lastPrice if reasonable
     if pd.notna(last) and last > 0:
         return float(last)
+
     return np.nan
 
 
+<<<<<<< HEAD
+
+
+def get_market_prices_yahoo(ticker, T_days=None):
+=======
 def get_all_option_maturities(ticker: str):
     stock = yf.Ticker(ticker)
     maturities = getattr(stock, "options", None)
@@ -116,6 +127,7 @@ def get_all_option_maturities(ticker: str):
 
 
 def get_market_prices_yahoo(ticker: str, T_days: int = None):
+>>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
     stock = yf.Ticker(ticker)
     dates = getattr(stock, "options", None)
     if not dates:
@@ -149,22 +161,35 @@ def get_market_prices_yahoo(ticker: str, T_days: int = None):
 # Build implied vol curve from market (BS inversion)
 # ============================================================
 def generate_vol_curve(S, maturity_date, r, q, market_calls, market_puts, option_type):
-    option_type = option_type.lower()
-    T = (pd.to_datetime(maturity_date) - pd.Timestamp.today()).days / 365.0
+    T = (pd.to_datetime(maturity_date) - pd.Timestamp.today()).total_seconds() / (365.0*24*3600)
     if T <= 0:
         return [], [], np.nan, {}
 
     disc_r = np.exp(-r * T)
     disc_q = np.exp(-q * T)
+    F = S * disc_q / disc_r  # forward approx
 
-    strikes = sorted(set(market_calls.keys()).union(set(market_puts.keys())))
-    prices_for_type = {}
+    strikes = sorted(set(market_calls) | set(market_puts))
+    prices = {}
 
     # parity blend to reduce noise when both call&put exist
     for K in strikes:
-        c = market_calls.get(K, None)
-        p = market_puts.get(K, None)
+        c = market_calls.get(K, np.nan)
+        p = market_puts.get(K, np.nan)
 
+<<<<<<< HEAD
+        # OTM selection (recommended)
+        if K >= F:   # use calls
+            if np.isfinite(c) and c > 0:
+                prices[K] = float(c)
+        else:        # use puts
+            if np.isfinite(p) and p > 0:
+                prices[K] = float(p)
+
+    strikes_out = sorted(prices.keys())
+    vols = [implied_volatility(S, K, T, r, q, prices[K], "call" if K>=F else "put")
+            for K in strikes_out]
+=======
         if option_type == "call":
             if c is not None and np.isfinite(c):
                 price = float(c)
@@ -190,8 +215,31 @@ def generate_vol_curve(S, maturity_date, r, q, market_calls, market_puts, option
         for K in strikes_out
     ]
     return strikes_out, vols, T, prices_for_type
+>>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
+    return strikes_out, vols, T, prices
 
+<<<<<<< HEAD
+# ----------------------------
+# 2D plot
+# ----------------------------
+def smooth_vol_curve(strikes, vols, num_points=120, smoothing_factor=1.0):
+    strikes = np.asarray(strikes, float)
+    vols = np.asarray(vols, float)
+
+    mask = np.isfinite(vols) & (vols > 1e-4) & (vols < 3.0)  # filtre aussi
+    strikes, vols = strikes[mask], vols[mask]
+    if strikes.size < 4:
+        return strikes, vols
+
+    y = np.log(vols)
+    spline = UnivariateSpline(strikes, y, s=float(smoothing_factor), k=3)
+
+    x_new = np.linspace(strikes.min(), strikes.max(), int(num_points))
+    vols_new = np.exp(spline(x_new))
+    return x_new, vols_new
+
+=======
 def clean_iv_points(S, strikes, vols, T, r, q,
                     vega_min=1e-4, iv_min=0.01, iv_max=3.0):
     strikes = np.asarray(strikes, dtype=float)
@@ -212,6 +260,7 @@ def clean_iv_points(S, strikes, vols, T, r, q,
         iv_clean.append(float(iv))
 
     return np.asarray(K_clean), np.asarray(iv_clean)
+>>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
 
 def smooth_smile_in_strike(S, strikes, vols, T, r, q, num_points=140, smoothing_factor=0.8):
@@ -288,8 +337,18 @@ def plot_iv_surface_KT(vol_curves, grid_K=70, grid_T=45, rbf_smooth=0.2, title="
     T_grid = np.linspace(Ts.min(), Ts.max(), int(grid_T))
     K_mesh, T_mesh = np.meshgrid(K_grid, T_grid)
 
+<<<<<<< HEAD
+    try:
+        Y = griddata((all_strikes, all_T), all_vols, (X, Z), method="linear")
+        Y2 = griddata((all_strikes, all_T), all_vols, (X, Z), method="nearest")
+        Y = np.where(np.isfinite(Y), Y, Y2)
+    except Exception:
+        Y = griddata((all_strikes, all_T), all_vols, (X, Z), method="nearest")
+
+=======
     rbf = Rbf(Ks, Ts, IVs, function="multiquadric", smooth=float(rbf_smooth))
     Z = rbf(K_mesh, T_mesh)
+>>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
     fig = go.Figure(data=[go.Surface(x=K_mesh, y=T_mesh, z=Z)])
     fig.update_layout(
