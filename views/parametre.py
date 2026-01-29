@@ -37,11 +37,9 @@ def app():
     else:
         st.session_state["option_type"] = st.selectbox("Exotic type", ["Asian", "Lookback"])
 
-# Initialisation de K une seule fois
     if "K" not in st.session_state:
         st.session_state["K"] = last_price
 
-    # Number input qui met à jour K
     st.session_state["K"] = st.number_input("Strike (K)", value = last_price)
     st.session_state["T"] = st.number_input("Maturity (T in years)", value=1.0)
     st.session_state["r"] = st.number_input("Risk-free rate (r)", value=0.02)

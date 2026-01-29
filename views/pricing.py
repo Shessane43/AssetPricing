@@ -58,46 +58,33 @@ def app():
     if model_name == "Heston":
         st.subheader("Heston Parameters")
 
-        st.session_state["v0"] = st.number_input(
-            "Initial variance v₀", value=st.session_state.get("v0", 0.04)
-        )
-        st.session_state["kappa"] = st.number_input(
-            "Mean reversion κ", value=st.session_state.get("kappa", 2.0)
-        )
-        st.session_state["theta"] = st.number_input(
-            "Long-term variance θ", value=st.session_state.get("theta", 0.04)
-        )
-        st.session_state["sigma_v"] = st.number_input(
-            "Vol-of-vol σᵥ", value=st.session_state.get("sigma_v", 0.30)
-        )
-        st.session_state["rho"] = st.number_input(
-            "Correlation ρ", value=st.session_state.get("rho", -0.5)
-        )
+        st.number_input("Initial variance v₀", key="v0")
+        st.number_input("Mean reversion κ", key="kappa")
+        st.number_input("Long-term variance θ", key="theta")
+        st.number_input("Vol-of-vol σᵥ", key="sigma_v")
+        st.number_input("Correlation ρ", key="rho")
+
     if model_name == "Gamma Variance":
         st.subheader("Variance Gamma Parameters")
+        st.number_input("Theta (VG)", key="theta")
+        st.number_input("Nu (VG)", key="nu")
 
-        st.session_state["theta"] = st.number_input(
-            "Theta (VG)", value=st.session_state.get("theta", 0.0)
-        )
-        st.session_state["nu"] = st.number_input(
-            "Nu (VG)", value=st.session_state.get("nu", 0.20)
-        )
     
     if model_name == "Trinomial Tree":
         st.subheader("Trinomial Tree Parameters")
 
-        st.session_state["n_steps"] = st.slider(
+        st.slider(
             "Number of steps",
             min_value=50,
             max_value=500,
-            value=st.session_state.get("n_steps", 150),
             step=10,
+            key="n_steps",
         )
-        st.session_state["exercise"] = st.radio(
+        st.radio(
             "Exercise type",
             ["European", "American"],
-            index=0,
-            horizontal=True
+            horizontal=True,
+            key="exercise",
         )
  
     if st.button("Compute Price"):

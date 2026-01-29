@@ -9,8 +9,8 @@ class Bachelier(Model):
         self.r = r
         self.T = T
         self.sigma = sigma  
-        self.option_type = option_type.lower()  # "call" ou "put"
-        self.position = position.lower()        # "buy" ou "sell"
+        self.option_type = option_type.lower()  
+        self.position = position.lower()      
 
     def price(self):
         d = (self.S - self.K) / (self.sigma * np.sqrt(self.T))
