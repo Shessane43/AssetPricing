@@ -53,20 +53,11 @@ class HestonModel(Model):
         a = self.kappa * self.theta
         sigma = self.sigma_v
         rho = self.rho
-<<<<<<< HEAD
         d = np.sqrt((rho * sigma * i * u - b_j) ** 2 - sigma**2 * (2 * u_j * i * u - u**2) + 0j)
-=======
-
-        d = np.sqrt(
-            (rho * sigma * i * u - b_j) ** 2
-            - sigma ** 2 * (2 * u_j * i * u - u ** 2)
-        )
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
         g = (b_j - rho * sigma * i * u - d) / (b_j - rho * sigma * i * u + d)
         exp_dt = np.exp(-d * tau)
 
-<<<<<<< HEAD
         eps = 1e-14 + 0j
         one_minus_g = 1.0 - g
         one_minus_gexp = 1.0 - g * exp_dt
@@ -75,18 +66,6 @@ class HestonModel(Model):
 
         C = self._r_adj() * i * u * tau + (a / sigma**2) * ((b_j - rho * sigma * i * u - d) * tau - 2.0 * log_term)
         D = (b_j - rho * sigma * i * u - d) * ((1.0 - exp_dt) / (sigma**2 * (one_minus_gexp + eps)))
-=======
-        C = (
-            self._r_adj() * i * u * tau
-            + (a / sigma ** 2)
-            * (
-                (b_j - rho * sigma * i * u - d) * tau
-                - 2 * np.log((1 - g * exp_dt) / (1 - g))
-            )
-        )
-
-        D = ((b_j - rho * sigma * i * u - d) / sigma ** 2) * ((1 - exp_dt) / (1 - g * exp_dt))
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
         return np.exp(C + D * self.v0 + i * u * x0)
 
@@ -148,23 +127,8 @@ class HestonModel(Model):
             P1 = self._Pj(1, n=n)
             P2 = self._Pj(2, n=n)
 
-<<<<<<< HEAD
     def implied_volatility(self, market_price):
         target = market_price * self._sign()
-=======
-            disc_r = np.exp(-self.r * self.T)
-            disc_q = np.exp(-self.q * self.T)
-
-            call = self.S * disc_q * P1 - self.K * disc_r * P2
-            price = call if self.option_type == "call" else call - self.S * disc_q + self.K * disc_r
-            return self._sign() * price
-
-        # Exotic → Monte Carlo Heston
-        return self._price_exotic_mc()
-
-    def implied_volatility(self, price):
-        target = price * self._sign()
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
         def f(sig):
             bs = BlackScholes(
@@ -179,10 +143,6 @@ class HestonModel(Model):
             return np.nan
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
     @staticmethod
     def calibrate(
         S, r, q, option_type,
@@ -219,7 +179,6 @@ class HestonModel(Model):
             (-0.95, 0.95),   # rho
         ]
 
-<<<<<<< HEAD
         res = minimize(objective, initial_guess, method="Nelder-Mead")
         return res.x
     
@@ -317,57 +276,3 @@ class HestonModel(Model):
         )
 
         return res.x, res
-=======
-        def objective_factory(n_quad: int):
-            def obj(x):
-                v0, kappa, theta, sigma_v, rho = x
-
-                if enforce_feller and 2 * kappa * theta <= sigma_v ** 2:
-                    return 1e6
-
-                err = 0.0
-                for K, T, pm in zip(K_list, T_list, P_mkt):
-                    model = HestonModel(
-                        S, K, r, T, q,
-                        option_type=option_type,
-                        position="buy",
-                        option_class="vanilla",
-                        v0=v0, kappa=kappa, theta=theta,
-                        sigma_v=sigma_v, rho=rho
-                    )
-                    p = model.price(n=n_quad)
-                    if not np.isfinite(p) or p <= 0:
-                        return 1e6
-
-                    weight = 1.0 + 2.0 * abs(K / S - 1.0)
-                    diff = weight * (p - pm)
-
-                    if use_relative_error:
-                        diff = diff / max(pm, 1e-6)
-
-                    err += diff * diff
-
-                return err / len(K_list)
-            return obj
-
-        # Stage 1 (coarse)
-        res1 = minimize(
-            objective_factory(n_coarse),
-            np.array(initial_guess, dtype=float),
-            method="L-BFGS-B",
-            bounds=bounds,
-            options={"maxiter": int(maxiter_coarse), "ftol": 1e-9}
-        )
-        x1 = res1.x if res1.success else np.array(initial_guess, dtype=float)
-
-        # Stage 2 (refine)
-        res2 = minimize(
-            objective_factory(n_refine),
-            x1,
-            method="L-BFGS-B",
-            bounds=bounds,
-            options={"maxiter": int(maxiter_refine), "ftol": 1e-10}
-        )
-
-        return res2.x if res2.success else x1
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649

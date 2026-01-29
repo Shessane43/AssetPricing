@@ -17,7 +17,6 @@ from functions.vol_function import (
 
 def app():
 
-<<<<<<< HEAD
     # =========================
     # CHECK SESSION
     # =========================
@@ -28,10 +27,6 @@ def app():
     required = ["S", "r", "q", "option_type", "K"]
     if any(k not in st.session_state for k in required):
         st.info("Please set parameters in Parameters & Payoff first.")
-=======
-    if "ticker" not in st.session_state:
-        st.info("Select a ticker first.")
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
         return
 
     ticker = st.session_state["ticker"]
@@ -43,7 +38,6 @@ def app():
     option_type = st.session_state["option_type"].lower()
     buy_sell = st.session_state["buy_sell"]
 
-<<<<<<< HEAD
     st.title("Implied Volatility")
 
     # =========================
@@ -55,24 +49,14 @@ def app():
         horizontal=True
     )
 
-=======
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
     st.markdown(
         f"""
         **Ticker**: **{ticker}**
 
-<<<<<<< HEAD
         **Spot (S)**: {S:.4f}  
         **Reference strike (K)**: {K0:.4f}
 
         **Risk-free rate (r)**: {r:.2%}  
-=======
-        **Spot (S)**: {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
-        **Strike (K)**: {K0:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
-
-        **Risk-free rate (r)**: {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
-        **Volatility (σ)**: {sigma:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
         **Dividend yield (q)**: {q:.2%}
 
         **Option type**: **{option_type}**  
@@ -111,7 +95,6 @@ def app():
     strikes_2d, vols_2d, T_2d, prices_2d = generate_vol_curve(
         S, maturity_real, r, q, calls, puts, option_type
     )
-<<<<<<< HEAD
 
     # =========================
     # 2D MARKET IV
@@ -125,28 +108,6 @@ def app():
             title="Market Implied Volatility Curve"
         )
         st.pyplot(fig_2d)
-=======
-    strikes_2d, vols_2d = clean_iv_points(
-        S, strikes_2d, vols_2d, T_2d, r, q
-    )
-
-    if model_choice == "Black-Scholes":
-        if len(strikes_2d) < 4:
-            st.warning("Not enough IV points for 2D smile.")
-        else:
-            fig_bs_2d = plot_vol_curve(
-                S=S,
-                strikes=strikes_2d,
-                vols=vols_2d,
-                maturity=maturity_real,
-                K=K0,
-                T=T_2d,
-                r=r,
-                q=q,
-                title="Market Implied Volatility Smile"
-            )
-            st.pyplot(fig_bs_2d)
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
     # =========================
     # BUILD MARKET SURFACE
@@ -178,7 +139,6 @@ def app():
         st.warning("Not enough data to build volatility surface.")
         return
 
-<<<<<<< HEAD
     # =========================
     # MARKET IV SURFACE
     # =========================
@@ -227,58 +187,6 @@ def app():
     # =========================
     # LOAD HESTON PARAMETERS
     # =========================
-=======
-    if model_choice == "Black-Scholes":
-        fig_bs_3d = plot_iv_surface_KT(
-            market_surface,
-            title="Market Implied Volatility Surface (K, T)"
-        )
-        st.plotly_chart(fig_bs_3d, use_container_width=True)
-        return
-
-    st.subheader("Heston calibration")
-
-    if st.button("Calibrate Heston", type="primary"):
-        with st.spinner("Calibrating Heston (fast & stable)..."):
-            K_list, T_list, P_list = select_calibration_points(
-                market_surface=market_surface,
-                S=S,
-                max_maturities=3,
-                strikes_per_mat=10,
-                moneyness_band=(0.65, 1.35)
-            )
-
-            if len(K_list) < 10:
-                st.error("Not enough calibration points.")
-                return
-
-            params = HestonModel.calibrate(
-                S=S,
-                r=r,
-                q=q,
-                option_type=option_type,
-                K_list=K_list,
-                T_list=T_list,
-                market_prices=P_list,
-                initial_guess=(0.04, 1.5, 0.04, 0.30, -0.50),
-                enforce_feller=True,
-                maxiter_coarse=50,
-                maxiter_refine=70,
-                n_coarse=16,
-                n_refine=32,
-                use_relative_error=True
-            )
-            
-            st.session_state["heston_calibrated"] = {
-                "v0": float(params[0]),
-                "kappa": float(params[1]),
-                "theta": float(params[2]),
-                "sigma_v": float(params[3]),
-                "rho": float(params[4]),
-            }
-
-        st.success("Heston calibration completed.")
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
     if "heston_calibrated" not in st.session_state:
         st.info("Calibrate Heston to display model IV.")
@@ -312,7 +220,6 @@ def app():
         iv = model.implied_volatility(model.price())
         vols_heston_2d.append(iv)
 
-<<<<<<< HEAD
     fig_2d = plot_vol_curve(
         strikes_2d,
         vols_heston_2d,
@@ -326,8 +233,6 @@ def app():
     # 3D HESTON SURFACE
     # =========================
     vol_surface_heston = {}
-=======
->>>>>>> f8748d04a23fbf5bedac493e886b0539c5aa6649
 
     vols_heston_2d = generate_heston_iv_curve(
         S=S,
