@@ -48,11 +48,14 @@ def app():
 
     st.title("Implied Volatility")
 
-    model_choice = st.radio(
+    st.radio(
         "Model",
         ["Black-Scholes", "Heston"],
-        horizontal=True
+        horizontal=True,
+        key="iv_model"
     )
+    model_choice = st.session_state.iv_model
+
 
     maturities = get_all_option_maturities(ticker)
     if not maturities:
