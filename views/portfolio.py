@@ -7,14 +7,15 @@ from functions.portfolio_function import (
     remove_position,
     calculate_prices_and_greeks,
     calculate_portfolio_greeks,
-    calculate_portfolio_value
+    calculate_portfolio_value,
+    delta_hedge_portfolio
 )
 from functions.parameters_function import ALL_TICKERS
-from functions.pricing_function import price_option  # pour recalcul T2
+from functions.pricing_function import price_option
 
 def app():
     # =========================
-    # Initialisation
+    # Initialization
     # =========================
     st.session_state.setdefault("portfolio", [])
 
@@ -24,51 +25,28 @@ def app():
     # Add a position
     # =========================
     with st.expander("Add a position"):
-        position_type = st.selectbox(
-            "Instrument type",
-            ["Option", "Stock"],
-            key="position_type_new"
-        )
-
-        ticker = st.selectbox(
-            "Ticker",
-            ALL_TICKERS,
-            key="ticker_new"
-        )
-
-        qty = st.number_input(
-            "Quantity (negative for short)",
-            value=1.0,
-            step=0.0001,
-            format="%.4f",
-            key="qty_new"
-        )
+        position_type = st.selectbox("Instrument type", ["Option", "Stock"], key="position_type_new")
+        ticker = st.selectbox("Ticker", ALL_TICKERS, key="ticker_new")
+        qty = st.number_input("Quantity (negative for short)", value=1.0, step=0.0001, format="%.4f", key="qty_new")
+        buy_sell_flag = "buy" if qty > 0 else "sell"
 
         # ---------- Stock ----------
         if position_type == "Stock":
             S = st.number_input("Spot price (S)", value=100.0, key="S_stock")
-
             if st.button("Add stock"):
                 position = {
-                    "position_type": "Stock",
+                    "instrument_type": "Stock",
                     "ticker": ticker,
                     "S": S,
-                    "qty": qty
+                    "qty": qty,
+                    "buy_sell": buy_sell_flag
                 }
-                st.session_state["portfolio"] = add_position(
-                    st.session_state["portfolio"],
-                    position
-                )
+                st.session_state["portfolio"] = add_position(st.session_state["portfolio"], position)
                 st.success(f"Stock {ticker} added")
 
         # ---------- Option ----------
         else:
-            option_type = st.selectbox(
-                "Option type",
-                ["Call", "Put"],
-                key="option_type_new"
-            )
-
+            option_type = st.selectbox("Option type", ["Call", "Put"], key="option_type_new")
             S = st.number_input("Spot (S)", value=100.0, key="S_option")
             K = st.number_input("Strike (K)", value=100.0, key="K_option")
             T = st.number_input("Maturity (T, years)", value=1.0, key="T_option")
@@ -79,7 +57,7 @@ def app():
 
             if st.button("Add option"):
                 position = {
-                    "position_type": "Option",
+                    "instrument_type": "Option",
                     "ticker": ticker,
                     "S": S,
                     "K": K,
@@ -88,21 +66,18 @@ def app():
                     "sigma": sigma,
                     "q": q,
                     "qty": qty,
+                    "buy_sell": buy_sell_flag,
                     "option_type": option_type,
                     "model_name": model_name,
                     "option_class": "Vanilla"
                 }
-                st.session_state["portfolio"] = add_position(
-                    st.session_state["portfolio"],
-                    position
-                )
+                st.session_state["portfolio"] = add_position(st.session_state["portfolio"], position)
                 st.success(f"{option_type} option on {ticker} added")
 
     # =========================
-    # Portfolio display
+    # Display Portfolio
     # =========================
     st.subheader("1 - Current Portfolio (T1)")
-
     if not st.session_state["portfolio"]:
         st.info("Portfolio is empty.")
         return
@@ -111,14 +86,13 @@ def app():
     st.dataframe(df, use_container_width=True)
 
     # =========================
-    # Portfolio value & PnL
+    # Portfolio value & P&L
     # =========================
-    cost = df["Price"].sum()
-    market_value = cost
-    pnl = market_value -cost
+    market_value, total_cost = calculate_portfolio_value(st.session_state["portfolio"])
+    pnl = market_value - total_cost
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total cost", f"{cost:.2f}")
+    col1.metric("Total cost", f"{total_cost:.2f}")
     col2.metric("Market value", f"{market_value:.2f}")
     col3.metric("P&L", f"{pnl:.2f}", delta=f"{pnl:.2f}")
 
@@ -129,8 +103,10 @@ def app():
     greeks = calculate_portfolio_greeks(st.session_state["portfolio"])
     st.table(greeks)
 
+    # =========================
+    # Delta Hedge
+    # =========================
     st.subheader("Delta Hedging")
-
     hedge_ticker = st.selectbox(
         "Underlying used for hedging",
         list({p["ticker"] for p in st.session_state["portfolio"]}),
@@ -138,101 +114,83 @@ def app():
     )
 
     if st.button("⚖️ Delta Hedge Portfolio"):
-        from functions.portfolio_function import delta_hedge_portfolio
-
-        st.session_state["portfolio"] = delta_hedge_portfolio(
-            st.session_state["portfolio"],
-            hedge_ticker
-        )
+        st.session_state["portfolio"] = delta_hedge_portfolio(st.session_state["portfolio"], hedge_ticker)
         st.success("Portfolio delta-hedged")
         st.rerun()
-
 
     # =========================
     # Remove positions
     # =========================
     st.subheader("Remove a position")
     to_delete = None
-
     for i, pos in enumerate(st.session_state["portfolio"]):
-        if pos["position_type"] == "Stock":
-            name = f"Stock ({pos['ticker']})"
-        else:
-            name = f"{pos.get('option_type', pos['position_type'])}_{i}"
-
-        if st.button(f"Supprimer {name}", key=f"del_{i}"):
+        name = pos["ticker"] if pos["instrument_type"] == "Stock" else f"{pos.get('option_type','Option')}_{i}"
+        if st.button(f"Delete {name}", key=f"del_{i}"):
             to_delete = i
 
     if to_delete is not None:
         removed = st.session_state["portfolio"][to_delete]
-        st.session_state["portfolio"] = [
-            p for j, p in enumerate(st.session_state["portfolio"]) if j != to_delete
-        ]
-        st.warning(
-            f"Are you sure you want to remove the {removed.get('option_type', removed['position_type'])} "
-            f"{removed['ticker']}? - Click again to confirm"
-        )
+        st.session_state["portfolio"] = [p for j, p in enumerate(st.session_state["portfolio"]) if j != to_delete]
+        st.warning(f"Removed {removed.get('option_type', removed['instrument_type'])} {removed['ticker']}")
         st.stop()
 
     # =========================
-    # Scenario Analysis: New parameters / Time 2
+    # Scenario Analysis (T2)
     # =========================
-
     st.write("-------")
     st.subheader("2 - Scenario Analysis : Parameter Change (T2)")
 
     portfolio_t2 = []
-
     for i, pos in enumerate(st.session_state["portfolio"]):
         new_pos = pos.copy()
-
-        # 🔒 Coût payé figé à T1
         new_pos["price_paid"] = pos.get("price_paid", 0)
 
-        # Stock
-        if pos["position_type"] == "Stock":
-            new_pos["S"] = st.number_input(
-                f"{pos['ticker']} | Stock | Spot",
-                value=float(pos["S"]),
-                key=f"S_t2_{i}"
-            )
-
-        # Option
+        if pos["instrument_type"] == "Stock":
+            new_pos["S"] = st.number_input(f"{pos['ticker']} | Stock | Spot",
+                                           value=float(pos["S"]), key=f"S_t2_{i}")
+            new_pos["price"] = new_pos["S"] * new_pos["qty"]
         else:
             col1, col2, col3 = st.columns(3)
-
             with col1:
-                new_pos["S"] = st.number_input(
-                    f"{pos['ticker']} | {pos.get('option_type','Call')} | Spot",
-                    value=float(pos["S"]),
-                    key=f"S_t2_{i}"
-                )
+                new_pos["S"] = st.number_input(f"{pos['ticker']} | {pos.get('option_type','Call')} | Spot",
+                                               value=float(pos["S"]), key=f"S_t2_{i}")
             with col2:
-                new_pos["sigma"] = st.number_input(
-                    f"{pos['ticker']} | {pos.get('option_type','Call')} | Volatility",
-                    value=float(pos.get("sigma", 0.2)),
-                    key=f"sigma_t2_{i}"
-                )
+                new_pos["sigma"] = st.number_input(f"{pos['ticker']} | {pos.get('option_type','Call')} | Volatility",
+                                                  value=float(pos.get("sigma", 0.2)), key=f"sigma_t2_{i}")
             with col3:
-                new_pos["T"] = st.number_input(
-                    f"{pos['ticker']} | {pos.get('option_type','Call')} | Maturity",
-                    value=float(pos["T"]),
-                    min_value=0.0,
-                    key=f"T_t2_{i}"
-                )
+                new_pos["T"] = st.number_input(f"{pos['ticker']} | {pos.get('option_type','Call')} | Maturity",
+                                               value=float(pos["T"]), min_value=0.0, key=f"T_t2_{i}")
+
+            # Recalcul du prix de l'option avec les nouveaux paramètres
+            params = {
+                "S": new_pos["S"],
+                "K": new_pos["K"],
+                "T": new_pos["T"],
+                "r": new_pos["r"],
+                "sigma": new_pos.get("sigma", 0.2),
+                "q": new_pos.get("q", 0.0),
+                "option_type": new_pos.get("option_type", "Call"),
+                "buy_sell": new_pos.get("buy_sell", "buy"),
+                "option_class": new_pos.get("option_class", "Vanilla")
+            }
+            model_name = new_pos.get("model_name", "Black-Scholes")
+            try:
+                new_pos["price"] = price_option(model_name, params) * new_pos.get("qty", 1)
+            except Exception:
+                new_pos["price"] = 0
 
         portfolio_t2.append(new_pos)
 
-    # Recalculer les prix et P&L globalement après avoir mis tous les inputs
     df_t2 = calculate_prices_and_greeks(portfolio_t2)
-    market_value_t2 = df_t2["Price"].sum()
-    pnl_t2 = market_value_t2 - cost
+
+    market_value_t2, _ = calculate_portfolio_value(portfolio_t2)
+    pnl_t2 = market_value_t2 - total_cost
 
     st.subheader("Portfolio at new parameters (T2)")
     st.dataframe(df_t2, use_container_width=True)
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total cost (T1)", f"{cost:.2f}")
+    col1.metric("Total cost (T1)", f"{total_cost:.2f}")
     col2.metric("Market value (T2)", f"{market_value_t2:.2f}")
     col3.metric("P&L (T2)", f"{pnl_t2:.2f}", delta=f"{pnl_t2:.2f}")
 

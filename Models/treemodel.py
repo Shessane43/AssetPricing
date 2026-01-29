@@ -76,7 +76,6 @@ class TrinomialTree:
     def price(self):
         n = self.n_steps
 
-        # Terminal spot grid: k = -n ... +n
         k = np.arange(-n, n + 1)
         S_T = self.S * (self.u ** k)
 

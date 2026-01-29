@@ -3,6 +3,20 @@ import matplotlib.pyplot as plt
 
 class Bond:
     def __init__(self, nominal, coupon_rate, rate, maturity, frequency=1):
+        """
+        Parameters
+        ----------
+        nominal : float
+            Bond face value.
+        coupon_rate : float
+            Annual coupon rate.
+        rate : float
+            Annual yield to maturity.
+        maturity : float
+            Bond maturity in years.
+        frequency : int, optional
+            Number of coupon payments per year (default is 1).
+        """
         self.nominal = nominal
         self.coupon_rate = coupon_rate
         self.rate = rate
@@ -10,6 +24,14 @@ class Bond:
         self.frequency = frequency
     
     def price(self):
+        """
+        Computes the bond price.
+
+        Returns
+        -------
+        float
+            Present value of all future cash flows.
+        """
         price = 0.0
         coupon = self.nominal * self.coupon_rate / self.frequency
         n_periods = int(self.maturity * self.frequency)
@@ -21,6 +43,16 @@ class Bond:
         return price
     
     def cash_flows(self):
+        """
+        Returns the bond cash flow schedule.
+
+        Returns
+        -------
+        times : numpy.ndarray
+            Payment times in years.
+        flows : list of float
+            Cash flow amounts at each payment date.
+        """
         coupon = self.nominal * self.coupon_rate / self.frequency
         n_periods = int(self.maturity * self.frequency)
         times = np.arange(1/self.frequency, self.maturity + 1/self.frequency, 1/self.frequency)
@@ -29,6 +61,14 @@ class Bond:
         return times, flows
     
     def plot_value_evolution(self):
+        """
+        Plots the remaining present value of the bond over time.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Matplotlib figure object.
+        """
         times, flows = self.cash_flows()
         remaining_value = []
         
@@ -69,22 +109,52 @@ class Bond:
         return fig
 
     def duration(self, dr=0.0001):
-       """Macaulay Duration approximation par différences finies"""
-       pv_plus = Bond(self.nominal, self.coupon_rate, self.rate + dr, self.maturity, self.frequency).price()
-       pv_minus = Bond(self.nominal, self.coupon_rate, self.rate - dr, self.maturity, self.frequency).price()
-       pv = self.price()
-       return (pv_minus - pv_plus) / (2 * dr * pv)
+        """
+        Approximates the Macaulay duration using finite differences.
+
+        Parameters
+        ----------
+        dr : float, optional
+            Yield shift used for finite differences (default is 1bp).
+
+        Returns
+        -------
+        float
+            Macaulay duration in years.
+        """
+        pv_plus = Bond(self.nominal, self.coupon_rate, self.rate + dr, self.maturity, self.frequency).price()
+        pv_minus = Bond(self.nominal, self.coupon_rate, self.rate - dr, self.maturity, self.frequency).price()
+        pv = self.price()
+        return (pv_minus - pv_plus) / (2 * dr * pv)
 
     def convexity(self, dr=0.0001):
-       """Convexity approximation par différences finies"""
-       pv_plus = Bond(self.nominal, self.coupon_rate, self.rate + dr, self.maturity, self.frequency).price()
-       pv_minus = Bond(self.nominal, self.coupon_rate, self.rate - dr, self.maturity, self.frequency).price()
-       pv = self.price()
-       return (pv_plus + pv_minus - 2 * pv) / (pv * dr ** 2)
+        """
+        Approximates the bond convexity using finite differences.
+
+        Parameters
+        ----------
+        dr : float, optional
+            Yield shift used for finite differences (default is 1bp).
+
+        Returns
+        -------
+        float
+            Bond convexity.
+        """
+        pv_plus = Bond(self.nominal, self.coupon_rate, self.rate + dr, self.maturity, self.frequency).price()
+        pv_minus = Bond(self.nominal, self.coupon_rate, self.rate - dr, self.maturity, self.frequency).price()
+        pv = self.price()
+        return (pv_plus + pv_minus - 2 * pv) / (pv * dr ** 2)
 
     def pv01(self):
-       """PV01 / DV01 approximation"""
-       pv_shift = Bond(self.nominal, self.coupon_rate, self.rate + 0.0001, self.maturity, self.frequency).price()
-       return pv_shift - self.price()
+        """
+        Computes the PV01 / DV01 of the bond.
 
-
+        Returns
+        -------
+        float
+            Price change for a +1bp increase in yield.
+            Positive for a long bond position.
+        """
+        pv_shift = Bond(self.nominal, self.coupon_rate, self.rate + 0.0001, self.maturity, self.frequency).price()
+        return self.price() - pv_shift

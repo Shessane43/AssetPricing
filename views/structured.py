@@ -5,8 +5,25 @@ from functions.structured_function import (
 )
 
 def app():
+    """
+    Streamlit app for pricing and visualizing structured products.
 
-     # Check if all required parameters exist
+    Uses session_state to retrieve underlying parameters:
+        - S: Spot price
+        - K: Strike price
+        - r: Risk-free rate
+        - sigma: Volatility
+        - T: Maturity (years)
+        - q: Dividend yield
+        - option_type, option_class, buy_sell
+
+    Provides:
+        - Selection of structured product type
+        - Inputs for product-specific strikes and volatilities
+        - Calculation of total price
+        - Visualization of payoff
+    """
+    # --- Check required parameters ---
     if not all(k in st.session_state for k in [
         "S", "K", "r", "sigma", "T", "q", "option_type", 
         "option_class", "buy_sell"
@@ -14,7 +31,7 @@ def app():
         st.error("Missing parameters. Please go back to the Parameters page.")
         return
 
-    # Retrieve parameters from session state
+    # --- Retrieve parameters ---
     ticker = st.session_state.get("ticker")
     S = st.session_state.get("S")
     K = st.session_state.get("K")
@@ -24,7 +41,7 @@ def app():
     q = st.session_state.get("q")
     option_type = st.session_state.get("option_type")
 
-
+    # --- Display basic parameters ---
     with st.container():
         st.markdown(
             f"""
@@ -45,7 +62,7 @@ def app():
         ["Straddle", "Strangle", "Bull Spread", "Bear Spread", "Butterfly Spread", "Collar"]
     )
 
-    # --- Parameters depending on the product ---
+    # --- Product-specific inputs ---
     if product_type == "Straddle":
         st.write("Long Call + Short Put on the same strike and maturity. Bets on high volatility regardless of market direction.")
         K = st.number_input("Strike", value=S)
@@ -137,4 +154,3 @@ def app():
     if st.button("← Back to Home"):
         st.session_state.page = "home"
         st.rerun()
-

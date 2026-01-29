@@ -9,16 +9,34 @@ from functions.vol_function import (
 )
 
 def _ensure_heston_calibrated(ticker, S, r, q, option_type):
+    """
+    Ensure the Heston model is calibrated before computing Greeks.
+    
+    If not calibrated, allows the user to select a maturity, fetch market option
+    prices, and perform calibration using HestonModel.calibrate.
+
+    Args:
+        ticker (str): Underlying ticker symbol
+        S (float): Spot price
+        r (float): Risk-free rate
+        q (float): Dividend yield
+        option_type (str): "call" or "put"
+
+    Returns:
+        bool: True if Heston is calibrated, False otherwise
+    """
     if "heston_calibrated" in st.session_state:
         return True
 
     st.warning("Heston not calibrated yet.")
 
+    # --- Get available option maturities ---
     maturities = get_all_option_maturities(ticker)
     if not maturities:
         st.error("No option maturities available for calibration.")
         return False
 
+    # --- User selects maturity ---
     maturity_choice = st.selectbox(
         "Choose maturity used for Heston calibration",
         maturities,
@@ -26,6 +44,7 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
         key="heston_calib_maturity_choice",
     )
 
+    # --- Get market prices for calibration ---
     T_days = (pd.to_datetime(maturity_choice) - pd.Timestamp.today()).days
     calls, puts, maturity_real = get_market_prices_yahoo(ticker, T_days=T_days)
 
@@ -41,6 +60,7 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
 
     prices_list = [prices[k] for k in strikes]
 
+    # --- Calibration parameter inputs ---
     with st.expander("Calibration settings", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
@@ -53,6 +73,7 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
 
         initial_guess = [v0, kappa, theta, sigma_v, rho]
 
+    # --- Calibration button ---
     if st.button("Calibrate Heston now", type="primary"):
         params = HestonModel.calibrate(
             S=S,
@@ -60,13 +81,13 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
             T=T_years,
             q=q,
             option_type=option_type,
-            
             position="buy",
             K_list=strikes,
             market_prices=prices_list,
             initial_guess=initial_guess,
         )
 
+        # --- Save calibrated parameters in session_state ---
         st.session_state["heston_calibrated"] = {
             "v0": float(params[0]),
             "kappa": float(params[1]),
@@ -82,11 +103,23 @@ def _ensure_heston_calibrated(ticker, S, r, q, option_type):
 
 
 def app():
+    """
+    Streamlit app for computing option Greeks using Black-Scholes, Heston, or Gamma Variance models.
+
+    Uses session_state for retrieving underlying parameters:
+        - ticker, S, K, r, sigma, T, q, option_type, buy_sell
+
+    Provides:
+        - Selection of model
+        - Optional Heston calibration
+        - Display of Greek curves and numeric values
+    """
     required_keys = ["ticker", "S", "K", "r", "sigma", "T", "q", "option_type", "buy_sell"]
     if not all(k in st.session_state for k in required_keys):
         st.warning("Please set parameters first.")
         return
 
+    # --- Retrieve parameters from session ---
     ticker = st.session_state["ticker"]
     S = float(st.session_state["S"])
     K = float(st.session_state["K"])
@@ -97,14 +130,15 @@ def app():
     option_type = st.session_state["option_type"].lower()
     position = st.session_state["buy_sell"].lower()
 
+    # --- Model selection ---
     st.subheader("Greeks")
-
     model_name = st.radio(
         "Greek model",
         ["Black-Scholes", "Heston", "Gamma Variance"],
         horizontal=True,
     )
 
+    # --- Display basic info ---
     st.markdown(
         f"""
         **Ticker**: **{ticker}**
@@ -123,13 +157,13 @@ def app():
         """
     )
 
+    # --- Greeks computation ---
     if model_name == "Heston":
         ok = _ensure_heston_calibrated(ticker, S, r, q, option_type)
         if not ok:
             return
 
         calib = st.session_state["heston_calibrated"]
-
         greeks = Greeks(
             option_type=option_type,
             model="Heston",
@@ -139,7 +173,7 @@ def app():
             theta_heston=calib["theta"],
             sigma_v=calib["sigma_v"],
             rho=calib["rho"],
-            buy_sell=position ,
+            buy_sell=position,
         )
 
     elif model_name == "Black-Scholes":
@@ -150,25 +184,14 @@ def app():
             sigma=sigma,
             buy_sell=position,
         )
+
     elif model_name == "Gamma Variance":
-
         st.subheader("Gamma Variance parameters")
-
         col1, col2 = st.columns(2)
         with col1:
-            theta_vg = st.number_input(
-                "Theta (VG drift)",
-                value=0.0,
-                step=0.05,
-                format="%.4f"
-            )
+            theta_vg = st.number_input("Theta (VG drift)", value=0.0, step=0.05, format="%.4f")
         with col2:
-            nu_vg = st.number_input(
-                "Nu (VG variance rate)",
-                value=0.2,
-                step=0.05,
-                format="%.4f"
-            )
+            nu_vg = st.number_input("Nu (VG variance rate)", value=0.2, step=0.05, format="%.4f")
         greeks = Greeks(
             option_type=option_type,
             model="Gamma Variance",
@@ -178,14 +201,17 @@ def app():
             nu=nu_vg,
             buy_sell=position,
         )
+
     else:
         st.info("Gamma Variance: please provide (theta, nu) inputs here if you want it.")
         return
 
+    # --- Plot Greek curves ---
     fig = greeks.plot_all_greeks()
     st.subheader("Greek curves")
     st.pyplot(fig)
 
+    # --- Display numeric Greek values ---
     greek_values = {
         "Delta": greeks.delta(),
         "Gamma": greeks.gamma(),
@@ -198,6 +224,7 @@ def app():
     for col, (name, val) in zip(cols, greek_values.items()):
         col.metric(name, f"{float(val):.4f}")
 
+    # --- Navigation ---
     if st.button("← Back to Home"):
         st.session_state.page = "home"
         st.rerun()
