@@ -131,7 +131,7 @@ def app():
     if to_delete is not None:
         removed = st.session_state["portfolio"][to_delete]
         st.session_state["portfolio"] = [p for j, p in enumerate(st.session_state["portfolio"]) if j != to_delete]
-        st.warning(f"Removed {removed.get('option_type', removed['instrument_type'])} {removed['ticker']}")
+        st.warning(f"Do you want to remove {removed.get('option_type', removed['instrument_type'])} {removed['ticker']} ? Click again to remove.")
         st.stop()
 
     # =========================
