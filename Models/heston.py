@@ -8,21 +8,39 @@ from Models.blackscholes import BlackScholes
 
 class HestonModel(Model):
     """
-    Heston (1993)
+    Heston (1993) stochastic volatility model.
 
-    Vanilla:
-        - Closed-form (Fourier / Laguerre)
-        - Monte Carlo fallback if unstable
+    This class implements the Heston model for option pricing, where the
+    variance of the underlying asset follows a mean-reverting square-root
+    process. The model supports:
 
-    Exotic (MC only):
-        - Asian (fixed strike)
-        - Lookback (fixed strike)
+    Vanilla options:
+        - Semi-closed-form pricing using Fourier inversion and
+          Gauss–Laguerre quadrature.
+        - Monte Carlo fallback in case of numerical instability.
+
+    Exotic options (Monte Carlo only):
+        - Asian options (fixed strike)
+        - Lookback options (fixed strike)
     """
 
     _LAG_CACHE = {}
 
     @staticmethod
     def _laguerre_nodes(n):
+        """
+        Retrieve and cache Gauss–Laguerre quadrature nodes and weights.
+
+        Parameters
+        ----------
+        n : int
+            Number of quadrature points.
+
+        Returns
+        -------
+        tuple
+            Arrays of quadrature nodes and weights.
+        """
         if n not in HestonModel._LAG_CACHE:
             x, w = laggauss(n)
             HestonModel._LAG_CACHE[n] = (x.astype(float), w.astype(float))
@@ -31,15 +49,52 @@ class HestonModel(Model):
     def __init__(
         self,
         S, K, r, T, q,
-        option_type="call",        
-        position="long",           
-        option_class="vanilla",    
+        option_type="call",
+        position="long",
+        option_class="vanilla",
         v0=0.04,
         kappa=1.5,
         theta=0.04,
         sigma_v=0.3,
         rho=-0.7
     ):
+        """
+        Initialize a Heston option pricing model.
+
+        Parameters
+        ----------
+        S : float
+            Current price of the underlying asset.
+        K : float
+            Strike price.
+        r : float
+            Risk-free interest rate (continuously compounded).
+        T : float
+            Time to maturity (in years).
+        q : float
+            Continuous dividend yield.
+        option_type : str, optional
+            Option payoff type ("call", "put", or exotic variants).
+        position : str, optional
+            Position type ("long" or "short").
+        option_class : str, optional
+            Option class ("vanilla" or "exotic").
+        v0 : float, optional
+            Initial variance.
+        kappa : float, optional
+            Speed of mean reversion of the variance.
+        theta : float, optional
+            Long-run variance level.
+        sigma_v : float, optional
+            Volatility of variance (vol-of-vol).
+        rho : float, optional
+            Correlation between asset and variance processes.
+
+        Notes
+        -----
+        Parameters are clipped or floored when necessary to ensure numerical
+        stability and validity of the variance process.
+        """
         super().__init__(S, K, r, T, option_type, position, option_class)
 
         self.q = q
@@ -52,14 +107,50 @@ class HestonModel(Model):
     # ---------------- Utilities ---------------- #
 
     def _sign(self):
+        """
+        Return the sign associated with the position.
+
+        Returns
+        -------
+        float
+            +1.0 for long positions, -1.0 for short positions.
+        """
         return -1.0 if self.position.lower() == "short" else 1.0
 
     def _r_adj(self):
+        """
+        Compute the dividend-adjusted risk-free rate.
+
+        Returns
+        -------
+        float
+            r - q
+        """
         return self.r - self.q
 
     # ---------------- Characteristic Function ---------------- #
 
     def _char_func(self, u, j):
+        """
+        Characteristic function of log(S_T) under the Heston model.
+
+        Parameters
+        ----------
+        u : array_like or complex
+            Argument of the characteristic function.
+        j : int
+            Index selecting the probability measure (1 or 2).
+
+        Returns
+        -------
+        numpy.ndarray
+            Value of the characteristic function.
+
+        Notes
+        -----
+        This implementation follows the original Heston (1993) formulation
+        and is used in Fourier-based option pricing.
+        """
         u = np.asarray(u, dtype=np.complex128)
         i = 1j
         tau = float(self.T)
@@ -103,6 +194,21 @@ class HestonModel(Model):
     # ---------------- Fourier Pricing ---------------- #
 
     def _Pj(self, j, n=32):
+        """
+        Compute the risk-neutral probability P_j using Fourier inversion.
+
+        Parameters
+        ----------
+        j : int
+            Probability index (1 or 2).
+        n : int, optional
+            Number of Gauss–Laguerre quadrature points.
+
+        Returns
+        -------
+        float
+            Value of the probability P_j.
+        """
         x, w = self._laguerre_nodes(n)
         u = x + 1e-10
         phi = self._char_func(u, j)
@@ -118,6 +224,14 @@ class HestonModel(Model):
     # ---------------- Monte Carlo ---------------- #
 
     def _simulate_paths(self, n_paths=40_000, n_steps=200, seed=42):
+        """
+        Simulate asset price paths under the Heston model using Euler discretization.
+
+        Returns
+        -------
+        numpy.ndarray
+            Simulated asset price paths.
+        """
         rng = np.random.default_rng(seed)
         dt = self.T / n_steps
         sqrt_dt = np.sqrt(dt)
@@ -150,21 +264,42 @@ class HestonModel(Model):
         return S
 
     def _price_mc_vanilla(self):
+        """
+        Price a vanilla option using Monte Carlo simulation.
+
+        Returns
+        -------
+        float
+            Discounted Monte Carlo price.
+        """
         ot = self.option_type.lower()
         if ot not in ["call", "put"]:
             raise ValueError(f"MC vanilla called with non-vanilla option_type: {ot}")
 
         paths = self._simulate_paths()
         ST = paths[:, -1]
+
         payoff = (
             np.maximum(ST - self.K, 0.0)
             if ot == "call"
             else np.maximum(self.K - ST, 0.0)
         )
+
         return np.exp(-self.r * self.T) * payoff.mean()
 
-
     def _price_exotic_mc(self):
+        """
+        Price exotic options using Monte Carlo simulation.
+
+        Supported payoffs:
+            - Asian (fixed strike)
+            - Lookback (fixed strike)
+
+        Returns
+        -------
+        float
+            Discounted Monte Carlo price.
+        """
         paths = self._simulate_paths()
         ot = self.option_type.lower()
 
@@ -192,6 +327,18 @@ class HestonModel(Model):
     # ---------------- Public API ---------------- #
 
     def price(self, n=32):
+        """
+        Compute the option price under the Heston model.
+
+        For vanilla options, a Fourier-based closed-form approximation
+        is used with Monte Carlo fallback. Exotic options are priced
+        using Monte Carlo simulation only.
+
+        Returns
+        -------
+        float
+            Option price adjusted for position sign.
+        """
         ot = self.option_type.lower()
 
         if ot in ["call", "put"]:
@@ -201,6 +348,7 @@ class HestonModel(Model):
 
                 if not (np.isfinite(P1) and np.isfinite(P2)):
                     raise FloatingPointError
+
                 disc_r = np.exp(-self.r * self.T)
                 disc_q = np.exp(-self.q * self.T)
 
@@ -212,11 +360,22 @@ class HestonModel(Model):
             except Exception:
                 return self._sign() * self._price_mc_vanilla()
 
-
         return self._sign() * self._price_exotic_mc()
 
-
     def implied_volatility(self, price):
+        """
+        Compute the Black–Scholes implied volatility of the option.
+
+        Parameters
+        ----------
+        price : float
+            Observed option price.
+
+        Returns
+        -------
+        float
+            Implied volatility, or NaN if not applicable.
+        """
         if self.option_class.lower() != "vanilla":
             return np.nan
 
