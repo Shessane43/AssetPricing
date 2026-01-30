@@ -52,15 +52,12 @@ class MarketData:
             st.warning("Cannot display plot: no data available.")
             return
 
-        # --- Figure setup ---
         fig, ax = plt.subplots(figsize=(10, 5))
         fig.patch.set_facecolor("#0e1117")
         ax.set_facecolor("#0e1117")
 
-        # --- Plot closing price ---
         ax.plot(data.index, data["Close"], color="orange", linewidth=2, label="Close Price")
 
-        # --- Axes styling ---
         for side in ("bottom", "top", "left", "right"):
             ax.spines[side].set_color("orange")
         ax.tick_params(colors="orange")
@@ -68,7 +65,6 @@ class MarketData:
         ax.set_ylabel("Price ($)", color="white")
         ax.grid(True, linestyle="--", color="orange", alpha=0.3)
 
-        # --- Legend styling ---
         legend = ax.legend(facecolor="#0e1117", edgecolor="white")
         for text in legend.get_texts():
             text.set_color("orange")
@@ -92,14 +88,12 @@ def show_data_page():
     ticker = st.session_state.ticker
     st.subheader(f"Data for {ticker}")
 
-    # --- User selects the period for historical data ---
     st.session_state.period = st.selectbox(
         "Data period",
         ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "max"],
-        index=3  # default '1y'
+        index=3  
     )
 
-    # --- Fetch data if not already available or period changed ---
     if ("market_data" not in st.session_state 
         or st.session_state.market_data is None 
         or st.session_state.market_data_period != st.session_state.period):
@@ -114,10 +108,8 @@ def show_data_page():
         st.warning("No data available for this ticker.")
         return
 
-    # --- Display data preview ---
     st.subheader("Data Preview")
     st.dataframe(data.head())
 
-    # --- Display closing price chart ---
     st.subheader("Closing Price Chart")
     MarketData.plot_close_price(data)

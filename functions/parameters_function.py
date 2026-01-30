@@ -102,7 +102,6 @@ class PayoffPlotter:
         ax.plot(S_range, payoff, color="orange", linewidth=2, label=label)
         ax.axvline(K, color="orange", linestyle="--", linewidth=2, label="Strike")
 
-        # Style axes
         for side in ["bottom", "top", "left", "right"]:
             ax.spines[side].set_color("orange")
 

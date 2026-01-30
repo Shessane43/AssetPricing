@@ -234,7 +234,6 @@ def plot_vol_curve(S, strikes, vols, maturity=None, K=None, T=None, r=None, q=No
     vols = np.asarray(vols, dtype=float)
 
     fig, ax = plt.subplots(figsize=(12, 6))
-    # --- Dark theme ---
     fig.patch.set_facecolor("#0e1117")
     ax.set_facecolor("#0e1117")
     ax.scatter(strikes, vols, marker="x", s=70, color='orange', label="IV points")

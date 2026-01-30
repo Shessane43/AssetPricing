@@ -15,7 +15,7 @@ class VarianceGamma(Model):
         theta,
         nu,
         option_type="call",
-        position="long"   # conservé pour compatibilité, mais ignoré
+        position="long"   
     ):
         super().__init__(S, K, r, T, option_type, position, "vanilla")
 
@@ -60,5 +60,4 @@ class VarianceGamma(Model):
         if self.option_type == "put":
             call_price = call_price - self.S + self.K * np.exp(-self.r * self.T)
 
-        # sécurité numérique
         return max(float(call_price), 0.0)

@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+
 from Models.heston import HestonModel
 from functions.greeks_function import Greeks
 from functions.vol_function import (
@@ -9,106 +10,75 @@ from functions.vol_function import (
 )
 
 def _ensure_heston_calibrated(ticker, S, r, q, option_type):
-    """
-    Ensure the Heston model is calibrated before computing Greeks.
-    
-    If not calibrated, allows the user to select a maturity, fetch market option
-    prices, and perform calibration using HestonModel.calibrate.
 
-    Args:
-        ticker (str): Underlying ticker symbol
-        S (float): Spot price
-        r (float): Risk-free rate
-        q (float): Dividend yield
-        option_type (str): "call" or "put"
-
-    Returns:
-        bool: True if Heston is calibrated, False otherwise
-    """
     if "heston_calibrated" in st.session_state:
         return True
 
-    st.warning("Heston not calibrated yet.")
+    with st.expander("Heston calibration", expanded=False):
 
-    maturities = get_all_option_maturities(ticker)
-    if not maturities:
-        st.error("No option maturities available for calibration.")
-        return False
+        st.warning("Heston not calibrated yet.")
 
-    maturity_choice = st.selectbox(
-        "Choose maturity used for Heston calibration",
-        maturities,
-        index=min(2, len(maturities) - 1),
-        key="heston_calib_maturity_choice",
-    )
+        maturities = get_all_option_maturities(ticker)
+        if not maturities:
+            st.error("No option maturities available.")
+            return False
 
-    T_days = (pd.to_datetime(maturity_choice) - pd.Timestamp.today()).days
-    calls, puts, maturity_real = get_market_prices_yahoo(ticker, T_days=T_days)
-
-    if not calls and not puts:
-        st.error("No option chain available for the selected maturity.")
-        return False
-
-    strikes, vols, T_years, prices = generate_vol_curve(S, maturity_real, r, q, calls, puts, option_type)
-
-    if len(strikes) < 6:
-        st.error("Not enough strikes to calibrate Heston.")
-        return False
-
-    prices_list = [prices[k] for k in strikes]
-
-    with st.expander("Calibration settings", expanded=False):
-        col1, col2 = st.columns(2)
-        with col1:
-            v0 = st.number_input("v0", value=0.04, step=0.01, format="%.4f")
-            kappa = st.number_input("kappa", value=2.0, step=0.1, format="%.4f")
-            theta = st.number_input("theta", value=0.04, step=0.01, format="%.4f")
-        with col2:
-            sigma_v = st.number_input("sigma_v", value=0.30, step=0.05, format="%.4f")
-            rho = st.number_input("rho", value=-0.50, step=0.05, format="%.4f")
-
-        initial_guess = [v0, kappa, theta, sigma_v, rho]
-
-    if st.button("Calibrate Heston now", type="primary"):
-        params = HestonModel.calibrate(
-            S=S,
-            r=r,
-            q=q,
-            option_type="call",
-            K_list=strikes,
-            T_list=[T_years] * len(strikes),   
-            market_prices=prices_list,
-            initial_guess=initial_guess,
+        maturity_choice = st.selectbox(
+            "Calibration maturity",
+            maturities,
+            index=min(2, len(maturities) - 1),
         )
 
-        st.session_state["heston_calibrated"] = {
-            "v0": float(params[0]),
-            "kappa": float(params[1]),
-            "theta": float(params[2]),
-            "sigma_v": float(params[3]),
-            "rho": float(params[4]),
-        }
-        st.success(f"Saved in session: {st.session_state['heston_calibrated']}")
-        return True
+        T_days = (pd.to_datetime(maturity_choice) - pd.Timestamp.today()).days
+        calls, puts, maturity_real = get_market_prices_yahoo(ticker, T_days)
 
-    st.info("Click the button to calibrate and compute Greeks.")
+        strikes, vols, T_years, prices = generate_vol_curve(
+            S, maturity_real, r, q, calls, puts, option_type
+        )
+
+        if len(strikes) < 6:
+            st.error("Not enough strikes to calibrate Heston.")
+            return False
+
+        col1, col2 = st.columns(2)
+        with col1:
+            v0 = st.number_input("v0", value=0.04, format="%.4f")
+            kappa = st.number_input("kappa", value=2.0, format="%.4f")
+            theta = st.number_input("theta", value=0.04, format="%.4f")
+        with col2:
+            sigma_v = st.number_input("sigma_v", value=0.30, format="%.4f")
+            rho = st.number_input("rho", value=-0.50, format="%.4f")
+
+        if st.button("Calibrate Heston", type="primary"):
+
+            params = HestonModel.calibrate(
+                S=S,
+                r=r,
+                q=q,
+                option_type="call",
+                K_list=strikes,
+                T_list=[T_years] * len(strikes),
+                market_prices=[prices[k] for k in strikes],
+                initial_guess=[v0, kappa, theta, sigma_v, rho],
+            )
+
+            st.session_state["heston_calibrated"] = dict(
+                v0=float(params[0]),
+                kappa=float(params[1]),
+                theta=float(params[2]),
+                sigma_v=float(params[3]),
+                rho=float(params[4]),
+            )
+
+            st.success("Heston calibrated ✔")
+            return True
+
     return False
 
-
 def app():
-    """
-    Streamlit app for computing option Greeks using Black-Scholes, Heston, or Gamma Variance models.
 
-    Uses session_state for retrieving underlying parameters:
-        - ticker, S, K, r, sigma, T, q, option_type, buy_sell
-
-    Provides:
-        - Selection of model
-        - Optional Heston calibration
-        - Display of Greek curves and numeric values
-    """
-    required_keys = ["ticker", "S", "K", "r", "sigma", "T", "q", "option_type", "buy_sell"]
-    if not all(k in st.session_state for k in required_keys):
+    required = ["ticker", "S", "K", "T", "r", "sigma", "q", "option_type", "buy_sell"]
+    if not all(k in st.session_state for k in required):
         st.warning("Please set parameters first.")
         return
 
@@ -122,7 +92,11 @@ def app():
     option_type = st.session_state["option_type"].lower()
     position = st.session_state["buy_sell"].lower()
 
+    is_vanilla = option_type in ["call", "put"]
+    allow_curves = True
+
     st.subheader("Greeks")
+
     model_name = st.radio(
         "Greek model",
         ["Black-Scholes", "Heston", "Gamma Variance"],
@@ -133,33 +107,57 @@ def app():
         f"""
         **Ticker**: **{ticker}**
 
-        **Spot (S)**: {S:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
-        **Strike (K)**: {K:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
-        **Maturity (T)**: {T} year(s)
+        **Spot (S)**: {S:.4f} | **Strike (K)**: {K:.4f} | **Maturity (T)**: {T}
 
-        **Risk-free rate (r)**: {r:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
-        **Volatility (σ)**: {sigma:.2%} &nbsp;&nbsp;|&nbsp;&nbsp;
-        **Dividend (q)**: {q:.2%}
+        **r**: {r:.2%} | **σ**: {sigma:.2%} | **q**: {q:.2%}
 
-        **Option**: **{option_type.capitalize()}** &nbsp;&nbsp;|&nbsp;&nbsp;
-        **Position**: **{position.capitalize()}** &nbsp;&nbsp;|&nbsp;&nbsp;
-        **Model**: **{model_name}**
+        **Option**: {option_type.capitalize()} | **Position**: {position.capitalize()} | **Model**: {model_name}
         """
     )
-    if model_name == "Black-Scholes" and option_type not in ["call", "put"]:
-        st.warning(
-            "Black-Scholes Greeks are only defined for vanilla options (call / put)."
-        )
-        return
 
-    if model_name == "Heston":
-
-        ok = _ensure_heston_calibrated(ticker, S, r, q, option_type)
-        if not ok:
+    if model_name == "Black-Scholes":
+        if not is_vanilla:
+            st.warning("Black-Scholes Greeks only available for vanilla options.")
             return
 
+        greeks = Greeks(
+            option_type=option_type,
+            model="Black-Scholes",
+            S=S, K=K, T=T, r=r,
+            sigma=sigma,
+            buy_sell=position,
+        )
+
+    elif model_name == "Gamma Variance":
+        if not is_vanilla:
+            st.warning("Variance Gamma Greeks only available for vanilla options.")
+            return
+
+        col1, col2 = st.columns(2)
+        with col1:
+            theta_vg = st.number_input("Theta (VG)", value=0.0, format="%.4f")
+        with col2:
+            nu_vg = st.number_input("Nu (VG)", value=0.2, format="%.4f")
+
+        greeks = Greeks(
+            option_type=option_type,
+            model="Gamma Variance",
+            S=S, K=K, T=T, r=r,
+            sigma=sigma,
+            theta=theta_vg,
+            nu=nu_vg,
+            buy_sell=position,
+        )
+
+    elif model_name == "Heston":
+
+        calibrated = _ensure_heston_calibrated(ticker, S, r, q, option_type)
+        if not calibrated:
+            st.info("Please calibrate Heston to compute Greeks.")
+            return
 
         calib = st.session_state["heston_calibrated"]
+
         greeks = Greeks(
             option_type=option_type,
             model="Heston",
@@ -172,56 +170,21 @@ def app():
             buy_sell=position,
         )
 
-    elif model_name == "Black-Scholes":
-        greeks = Greeks(
-            option_type=option_type,
-            model="Black-Scholes",
-            S=S, K=K, T=T, r=r,
-            sigma=sigma,
-            buy_sell=position,
-        )
+        if not is_vanilla:
+            st.info(
+                "Exotic Greeks under Heston are computed by Monte Carlo finite differences. "
+                "Only point Greeks are shown."
+            )
+            allow_curves = False
 
-    elif model_name == "Gamma Variance":
-        st.subheader("Gamma Variance parameters")
-        col1, col2 = st.columns(2)
-        with col1:
-            theta_vg = st.number_input("Theta (VG drift)", value=0.0, step=0.05, format="%.4f")
-        with col2:
-            nu_vg = st.number_input("Nu (VG variance rate)", value=0.2, step=0.05, format="%.4f")
-        greeks = Greeks(
-            option_type=option_type,
-            model="Gamma Variance",
-            S=S, K=K, T=T, r=r,
-            sigma=sigma,
-            theta=theta_vg,
-            nu=nu_vg,
-            buy_sell=position,
-        )
-
-    else:
-        st.info("Gamma Variance: please provide (theta, nu) inputs here if you want it.")
-        return
-
-    is_exotic = option_type not in ["call", "put"]
-
-    if model_name == "Heston" and is_exotic:
-        st.warning(
-            "Exotic Greeks under Heston are computed by Monte Carlo finite differences. "
-            "Greek curves are disabled for performance reasons."
-        )
-        return
-    if model_name == "Gamma Variance" and is_exotic:
-        st.warning(
-            "Gamma Variance Greeks are only available for vanilla options (call / put)."
-        )
-        return
-
-    else:
-        fig = greeks.plot_all_greeks()
+    if allow_curves:
         st.subheader("Greek curves")
+        fig = greeks.plot_all_greeks()
         st.pyplot(fig)
 
-    greek_values = {
+    st.subheader("Point Greeks")
+
+    greek_vals = {
         "Delta": greeks.delta(),
         "Gamma": greeks.gamma(),
         "Vega": greeks.vega(),
@@ -230,9 +193,5 @@ def app():
     }
 
     cols = st.columns(5)
-    for col, (name, val) in zip(cols, greek_values.items()):
-        col.metric(name, f"{float(val):.4f}")
-
-    if st.button("← Back to Home"):
-        st.session_state.page = "home"
-        st.rerun()
+    for col, (k, v) in zip(cols, greek_vals.items()):
+        col.metric(k, f"{float(v):.4f}")

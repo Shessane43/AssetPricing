@@ -50,7 +50,7 @@ def app():
         st.markdown("---")
         st.markdown(MODEL_EXPLANATIONS[model_name], unsafe_allow_html=False)
 
-    # ---------------- Model parameters ----------------
+
 
     if model_name == "Heston":
         st.subheader("Heston Parameters")
@@ -90,7 +90,7 @@ def app():
         with col2:
             st.number_input("Jump volatility σ_J", value=0.3, min_value=1e-4, key="sigma_j")
 
-    # ---------------- Compatibility checks ----------------
+
 
     if model_name in [
         "Black-Scholes", "Bachelier",
@@ -99,7 +99,7 @@ def app():
         st.warning(f"{model_name} only supports vanilla call / put options.")
         return
 
-    # ---------------- Pricing ----------------
+  
 
     if st.button("Compute Price"):
 

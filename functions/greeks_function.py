@@ -82,19 +82,16 @@ class Greeks:
         self.T = float(T)
         self.r = float(r)
 
-        # Variance Gamma parameters
         self.sigma = sigma
         self.theta_vg = theta
         self.nu = nu
 
-        # Heston parameters
         self.v0 = v0
         self.kappa = kappa
         self.theta_heston = theta_heston
         self.sigma_v = sigma_v
         self.rho_heston = rho
 
-        # Meta parameters
         self.option_type = option_type.lower()
         self.model = model
         self.buy_sell = buy_sell.lower()
@@ -143,14 +140,12 @@ class Greeks:
 
         raise ValueError(f"Unknown model: {self.model}")
 
-    # -------- Scalar Greeks --------
     def delta(self): return self._engine().delta()
     def gamma(self): return self._engine().gamma()
     def vega(self):  return self._engine().vega()
     def theta(self): return self._engine().theta()
     def rho(self):   return self._engine().rho()
 
-    # -------- Greeks curves --------
     def _curve(self, f, points=0.3, n=100):
         """
         Compute a Greek curve as a function of spot price.

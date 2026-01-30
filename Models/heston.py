@@ -31,9 +31,9 @@ class HestonModel(Model):
     def __init__(
         self,
         S, K, r, T, q,
-        option_type="call",        # call / put / asian_call / lookback_call ...
+        option_type="call",        
         position="long",           
-        option_class="vanilla",    # vanilla / exotic
+        option_class="vanilla",    
         v0=0.04,
         kappa=1.5,
         theta=0.04,
