@@ -2,11 +2,16 @@ from Models.blackscholes import BlackScholes
 from Models.heston import HestonModel
 from Models.gammavariance import VarianceGamma
 from Models.treemodel import TrinomialTree
+from Models.bachelier import Bachelier
+from Models.mertonjump import MertonJumpDiffusion
+
 MODELS = {
     "Black-Scholes": BlackScholes,
     "Heston": HestonModel,
     "Gamma Variance": VarianceGamma,
-    "Trinomial Tree": TrinomialTree
+    "Trinomial Tree": TrinomialTree,
+    "Bachelier": Bachelier,
+    "Merton Jump Diffusion": MertonJumpDiffusion
 }
 
 def price_option(model_name: str, params: dict):
@@ -71,6 +76,52 @@ def price_option(model_name: str, params: dict):
             exercise=params_clean.get("exercise", "european"),
             n_steps=params_clean.get("n_steps", 100),
         ).price()
+    elif model_name == "Bachelier":
+        buy_sell = params_clean.pop("buy_sell").lower()
+        sign = 1.0 if buy_sell in ["long", "buy"] else -1.0
+
+        params_clean.pop("q", None)
+        params_clean.pop("option_class", None)
+        for p in ["sigma"]:
+            if p not in params_clean:
+                raise ValueError(f"Paramètre '{p}' manquant pour Bachelier")
+
+        price = ModelClass(
+            S=params_clean["S"],
+            K=params_clean["K"],
+            r=params_clean["r"],
+            T=params_clean["T"],
+            sigma=params_clean["sigma"],
+            option_type=params_clean["option_type"],
+        ).price()
+
+        return sign * price
+    
+    elif model_name == "Merton Jump Diffusion":
+
+        buy_sell = params_clean.pop("buy_sell").lower()
+        sign = 1.0 if buy_sell in ["long", "buy"] else -1.0
+
+        params_clean.pop("q", None)
+        params_clean.pop("option_class", None)
+
+        for p in ["sigma", "lambd", "mu_j", "sigma_j"]:
+            if p not in params_clean:
+                raise ValueError(f"Paramètre '{p}' manquant pour Merton Jump")
+
+        price = ModelClass(
+            S=params_clean["S"],
+            K=params_clean["K"],
+            r=params_clean["r"],
+            T=params_clean["T"],
+            sigma=params_clean["sigma"],
+            lambd=params_clean["lambd"],
+            mu_j=params_clean["mu_j"],
+            sigma_j=params_clean["sigma_j"],
+            option_type=params_clean["option_type"],
+        ).price()
+
+        return sign * price
 
     else:
         raise ValueError("Modèle non supporté")

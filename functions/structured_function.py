@@ -204,22 +204,22 @@ def plot_structured_payoff(products, S0, S_range=None):
 
     # --- Plot with black/orange theme ---
     fig, ax = plt.subplots(figsize=(10,5))
-    fig.patch.set_facecolor("black")
-    ax.set_facecolor("black")
+    fig.patch.set_facecolor("#0e1117")
+    ax.set_facecolor("#0e1117")
 
     ax.plot(S_range, payoff_total, color="orange", lw=2, label="Payoff total")
     ax.axhline(0, color="white", lw=1, linestyle="--")
-    ax.axvline(S0, color="cyan", lw=1, linestyle="--", label="Current spot")
+    ax.axvline(S0, color="orange", lw=1, linestyle="--", label="Current spot")
 
     for side in ("bottom", "top", "left", "right"):
         ax.spines[side].set_color("orange")
 
     ax.tick_params(colors="orange")
-    ax.set_xlabel("Spot at maturity", color="orange")
-    ax.set_ylabel("Payoff", color="orange")
+    ax.set_xlabel("Spot at maturity", color="white")
+    ax.set_ylabel("Payoff", color="white")
     ax.grid(True, linestyle="--", color="orange", alpha=0.3)
 
-    legend = ax.legend(facecolor="black", edgecolor="orange")
+    legend = ax.legend(facecolor="#0e1117", edgecolor="white")
     for text in legend.get_texts():
         text.set_color("orange")
 

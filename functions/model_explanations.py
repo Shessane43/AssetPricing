@@ -166,6 +166,81 @@ V_t = e^{-r \Delta t}
 $$
 
 
+""",
+    "Bachelier": r"""
+### Bachelier (Normal) Model
+
+The Bachelier model assumes that the underlying asset price follows a
+**normal diffusion** instead of a log-normal one.
+
+**Asset price dynamics:**
+
+$$
+dS_t = (r - q)\,dt + \sigma\, dW_t
+$$
+
+where:
+- $S_t$ : asset price  
+- $r$ : risk-free rate  
+- $q$ : dividend yield  
+- $\sigma$ : absolute volatility  
+- $W_t$ : Brownian motion  
+
+**Key characteristics:**
+- Prices can become negative
+- Volatility is **absolute**, not proportional
+- Suitable for:
+  - Interest rates
+  - Spreads
+  - Low-price assets
+
+**Main difference vs Black–Scholes:**
+- Normal distribution instead of log-normal
+- Linear payoff sensitivities
+""",
+    "Merton Jump Diffusion": r"""
+### Merton Jump Diffusion Model
+
+The Merton model extends Black–Scholes by adding **Poisson-driven jumps**
+to the asset price dynamics.
+
+**Asset price dynamics:**
+
+$$
+\frac{dS_t}{S_t}
+= (r - \lambda k)\,dt
++ \sigma\, dW_t
++ (J - 1)\, dN_t
+$$
+
+where:
+- $W_t$ : Brownian motion  
+- $N_t$ : Poisson process with intensity $\lambda$  
+- $J$ : jump size (log-normal)  
+
+The jump size follows:
+$$
+\log J \sim \mathcal{N}(\mu_J, \sigma_J^2)
+$$
+
+with:
+$$
+k = \mathbb{E}[J - 1]
+$$
+
+**Key parameters:**
+- $\lambda$ : jump intensity  
+- $\mu_J$ : average jump size  
+- $\sigma_J$ : jump volatility  
+- $\sigma$ : diffusion volatility  
+
+**Key features:**
+- Captures sudden market moves
+- Produces volatility smiles
+- Finite jump activity
+
+**Special case:**
+- If $\lambda = 0$, the model reduces to Black–Scholes
 """
 
 }

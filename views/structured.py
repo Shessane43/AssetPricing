@@ -55,14 +55,12 @@ def app():
             """
         )
 
-    # --- Structured product selection ---
     st.subheader("Select the type of structured product")
     product_type = st.selectbox(
         "Structured Product",
         ["Straddle", "Strangle", "Bull Spread", "Bear Spread", "Butterfly Spread", "Collar"]
     )
 
-    # --- Product-specific inputs ---
     if product_type == "Straddle":
         st.write("Long Call + Short Put on the same strike and maturity. Bets on high volatility regardless of market direction.")
         K = st.number_input("Strike", value=S)
@@ -101,7 +99,6 @@ def app():
         sigma_put = st.number_input("Volatility Put", value=0.2)
         sigma_call = st.number_input("Volatility Call", value=0.2)
         
-    # --- Price calculation ---
     if st.button("Calculate structured product price"):
         try:
             if product_type == "Straddle":
@@ -125,7 +122,6 @@ def app():
         except Exception as e:
             st.error(f"Error: {e}")
 
-    # --- Display payoff ---
     if st.button("Show payoff"):
         products = []
         if product_type == "Straddle":

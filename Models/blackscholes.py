@@ -15,7 +15,7 @@ class BlackScholes(Model):
         self.q = q 
         self.option_type = option_type.lower()
         self.buy_sell = buy_sell.lower()
-        self.option_class = option_class.lower()  # "vanille" ou "exotique"
+        self.option_class = option_class.lower()  
      
     def price(self):
         if self.option_class != "vanilla":

@@ -9,10 +9,10 @@ class Model(ABC):
     """
 
     def __init__(self, S, K, r, T, option_type="call", position="buy", option_class="vanille"):
-        self.S = S              # Prix du sous-jacent
-        self.K = K              # Strike
-        self.r = r              # Taux sans risque
-        self.T = T              # Maturité
+        self.S = S              
+        self.K = K              
+        self.r = r              
+        self.T = T              
         self.option_type = option_type.lower()
         self.position = position.lower()
         self.option_class = option_class.lower()

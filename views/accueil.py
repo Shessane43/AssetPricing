@@ -65,17 +65,20 @@ def app():
     """, unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3, gap="large")
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c4, c5, _ = st.columns([1, 1, 1], gap="large")
 
     with c1:
         st.markdown("""
         <div class="card">
-          <div class="card-title">🧮 Derivatives</div>
+          <div class="card-title"> Derivatives</div>
           <div class="card-desc">
             Everything for option setup, payoff visualization, pricing and Greeks.
           </div>
           <div class="card-list">
             • Parameters & Payoff (entry point)<br>
-            • Pricing (BS / Heston / VG / Tree)<br>
+            • Pricing (BS / Heston (Exotic and Vanilla) / VG / Tree / Bachelier / Merton Jump Diffusion)<br>
             • Greeks (curves + metrics)
           </div>
         </div>
@@ -89,9 +92,9 @@ def app():
     with c2:
         st.markdown("""
         <div class="card">
-          <div class="card-title">📊 Market</div>
+          <div class="card-title"> Market</div>
           <div class="card-desc">
-            Market data + implied volatility curves & surfaces (market IV vs model IV).
+            Market data + implied volatility curves & surfaces.
           </div>
           <div class="card-list">
             • Data (spot / chains)<br>
@@ -109,7 +112,7 @@ def app():
     with c3:
         st.markdown("""
         <div class="card">
-          <div class="card-title">💼 Portfolio</div>
+          <div class="card-title"> Portfolio</div>
           <div class="card-desc">
             Aggregate positions, valuation and risk tracking at portfolio level.
           </div>
@@ -127,3 +130,41 @@ def app():
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
+    with c4:
+      st.markdown("""
+      <div class="card">
+        <div class="card-title"> Fixed Income</div>
+        <div class="card-desc">
+          Pricing and analysis of interest rate products.
+        </div>
+        <div class="card-list">
+          • Zero-coupon & coupon bonds<br>
+          • Yield curves (bootstrapping)<br>
+          • Duration, convexity & sensitivities
+        </div>
+      </div>
+      """, unsafe_allow_html=True)
+
+      st.markdown('<div class="cta">', unsafe_allow_html=True)
+      if st.button("Open Fixed Income", key="go_fi"):
+          _go("Fixed Income", "Pricing")
+      st.markdown('</div>', unsafe_allow_html=True)
+    with c5:
+      st.markdown("""
+      <div class="card">
+        <div class="card-title"> Structured Products</div>
+        <div class="card-desc">
+          Design and pricing of structured payoff products.
+        </div>
+        <div class="card-list">
+          • Autocalls / Phoenix / Athena<br>
+          • Capital protected notes<br>
+          • Payoff decomposition & Greeks
+        </div>
+      </div>
+      """, unsafe_allow_html=True)
+
+      st.markdown('<div class="cta">', unsafe_allow_html=True)
+      if st.button("Open Structured Products", key="go_sp"):
+          _go("Structured Products", "Overview")
+      st.markdown('</div>', unsafe_allow_html=True)

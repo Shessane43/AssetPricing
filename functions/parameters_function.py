@@ -96,25 +96,24 @@ class PayoffPlotter:
     def plot(S_range, payoff, K, label):
         fig, ax = plt.subplots(figsize=(8,5))
 
-        fig.patch.set_facecolor('black')
-        ax.set_facecolor('black')
+        fig.patch.set_facecolor("#0e1117")
+        ax.set_facecolor("#0e1117")
 
         ax.plot(S_range, payoff, color="orange", linewidth=2, label=label)
-        ax.axvline(K, color="red", linestyle="--", linewidth=2, label="Strike")
+        ax.axvline(K, color="orange", linestyle="--", linewidth=2, label="Strike")
 
-        # Style axes
         for side in ["bottom", "top", "left", "right"]:
             ax.spines[side].set_color("orange")
 
         ax.tick_params(axis="x", colors="orange")
         ax.tick_params(axis="y", colors="orange")
 
-        ax.set_xlabel("Prix du sous-jacent à maturité", color="orange")
-        ax.set_ylabel("Payoff", color="orange")
+        ax.set_xlabel("Prix du sous-jacent à maturité", color="white")
+        ax.set_ylabel("Payoff", color="white")
 
         ax.grid(True, linestyle="--", color="orange", alpha=0.3)
 
-        legend = ax.legend(facecolor="black", edgecolor="orange")
+        legend = ax.legend(facecolor="#0e1117", edgecolor="white")
         for text in legend.get_texts():
             text.set_color("orange")
 

@@ -34,7 +34,6 @@ class Greeks_Heston:
         self.option_type = option_type.lower()
         self.position = position.lower()
 
-        # 🔁 CHANGED: infer option_class automatically
         self.option_class = (
             "vanilla" if self.option_type in ["call", "put"] else "exotic"
         )
@@ -52,7 +51,7 @@ class Greeks_Heston:
             q=self.q,
             option_type=self.option_type,
             position=self.position,
-            option_class=self.option_class,   # 🔁 CHANGED
+            option_class=self.option_class,   
             v0=kwargs.get("v0", self.v0),
             kappa=self.kappa,
             theta=self.theta_v,
@@ -61,7 +60,6 @@ class Greeks_Heston:
         )
         return model.price()
 
-    # ---------- Greeks via finite differences ----------
 
     def delta(self, h=None):
         h = h or max(1e-4 * self.S, 1e-2)
@@ -87,7 +85,7 @@ class Greeks_Heston:
         Tp = self.T + h
         Tm = max(1e-6, self.T - h)
         dPdT = (self._price(T=Tp) - self._price(T=Tm)) / (2 * h)
-        return -dPdT   # market convention
+        return -dPdT   
 
     def rho(self, h=1e-4):
         return (self._price(r=self.r + h) - self._price(r=self.r - h)) / (2 * h)

@@ -17,7 +17,7 @@ def app():
     """
     st.title("Volatility Simulation (log-SV)")
 
-    # --- User inputs ---
+
     sigma0 = st.number_input("Initial Volatility σ₀", value=0.2, step=0.01)
     kappa = st.number_input("Mean reversion κ", value=2.0, step=0.1)
     theta = st.number_input("Long-term variance θ", value=0.04, step=0.01)
@@ -26,27 +26,23 @@ def app():
     N = st.number_input("Time steps", value=252)
     M = st.number_input("Number of paths", value=50)
 
-    # --- Simulation trigger ---
+
     if st.button("Simulate Volatility"):
-        # Call the log-SV simulator
+ 
         vol_paths = simulate_log_sv(
             sigma0=sigma0, kappa=kappa, theta=theta,
             sigma_v=sigma_v, T=T, N=N, M=M
         )
         
-        # Store simulated paths in session_state for use in other pages
         st.session_state["simulated_sigma_paths"] = vol_paths
         st.session_state["vol_T"] = T
 
-        # --- Plot sample paths ---
         fig1 = plot_vol_paths(vol_paths, T, title="Sample Volatility Paths (log-SV)")
         st.pyplot(fig1)
 
-        # --- Plot mean path ---
         fig2 = plot_vol_paths(vol_paths.mean(axis=0).reshape(1,-1), T, title="Average Volatility Path")
         st.pyplot(fig2)
 
-    # --- Optional model explanation ---
     if st.checkbox("Show Model Explanation"):
         st.markdown("""
         ### Log-Stochastic Volatility Model (log-SV)
