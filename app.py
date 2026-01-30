@@ -57,8 +57,6 @@ SECTIONS = {
     ],
 }
 
-st.markdown("<h1 style='text-align:center'>Asset Pricing Application</h1>", unsafe_allow_html=True)
-
 if "__nav_target__" in st.session_state:
     target_main, target_sub = st.session_state.pop("__nav_target__")
 
