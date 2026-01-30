@@ -15,11 +15,24 @@ Among the available features, you can:
 
 ## Table of Contents
 
+- [Installation and Setup](#-installation-and-setup)  
 - [Main Features](#-main-features)  
 - [Architecture](#-architecture)  
 - [Implemented Models](#-implemented-models)  
-- [Installation and Setup](#-installation-and-setup)  
 
+---
+
+## 💾 Installation and Setup
+
+### Prerequisites
+- Python 3.8+  
+- Install all packages listed in `requirements.txt`  
+
+To run the application, execute in the terminal:
+
+```bash
+streamlit run app.py
+```
 ---
 
 ## Main Menus and Capabilities
@@ -57,7 +70,8 @@ Here we list each page of our application along with all the functionalities the
 - Real-time quotes  
 
 ### 5. **Structured Products**
-- Pricing of complex structured products  
+- Pricing of complex structured products
+- Many products: Straddle, Strangle, Bull Spread, Bear Spread, Butterfly Spread
 - Cash flow decomposition  
 
 ### 6. **Fixed Income**
@@ -179,17 +193,3 @@ $$C = (F - K) N(d) + \sigma\sqrt{T} n(d)$$
 - American options  
 - Complex term structures  
 - Discrete dividends  
-
----
-
-## 💾 Installation and Setup
-
-### Prerequisites
-- Python 3.8+  
-- Install all packages listed in `requirements.txt`  
-
-To run the application, execute in the terminal:
-
-```bash
-streamlit run app.py
-```
