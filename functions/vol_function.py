@@ -12,9 +12,35 @@ import plotly.graph_objects as go
 
 
 # ============================================================
-# Black-Scholes pricing + IV (robuste)
+# Black-Scholes pricing and implied volatility (robust)
 # ============================================================
+
 def bs_price(S, K, T, r, q, sigma, option_type: str) -> float:
+    """
+    Compute the Black-Scholes price of a European option.
+
+    Parameters
+    ----------
+    S : float
+        Spot price of the underlying.
+    K : float
+        Strike price.
+    T : float
+        Time to maturity (in years).
+    r : float
+        Risk-free interest rate.
+    q : float
+        Continuous dividend yield.
+    sigma : float
+        Volatility.
+    option_type : str
+        "call" or "put".
+
+    Returns
+    -------
+    float
+        Black-Scholes option price.
+    """
     option_type = option_type.lower()
     if T <= 0 or sigma <= 0 or S <= 0 or K <= 0:
         return np.nan
@@ -30,6 +56,14 @@ def bs_price(S, K, T, r, q, sigma, option_type: str) -> float:
 
 
 def bs_vega(S, K, T, r, q, sigma) -> float:
+    """
+    Compute the Black-Scholes vega (sensitivity of price to volatility).
+
+    Returns
+    -------
+    float
+        Vega of the option.
+    """
     if T <= 0 or sigma <= 0 or S <= 0 or K <= 0:
         return 0.0
     vol_sqrt = sigma * np.sqrt(T)
@@ -38,6 +72,14 @@ def bs_vega(S, K, T, r, q, sigma) -> float:
 
 
 def no_arb_bounds(S, K, T, r, q, option_type: str):
+    """
+    Compute no-arbitrage bounds for a European option price.
+
+    Returns
+    -------
+    tuple(float, float)
+        Lower and upper arbitrage-free bounds.
+    """
     option_type = option_type.lower()
     if T <= 0:
         if option_type == "call":
@@ -59,6 +101,16 @@ def no_arb_bounds(S, K, T, r, q, option_type: str):
 
 def implied_volatility_bs(S, K, T, r, q, market_price, option_type,
                           vol_lower=1e-6, vol_upper=5.0, tol=1e-8, max_iter=200) -> float:
+    """
+    Compute Black-Scholes implied volatility using Brent's root-finding method.
+
+    Includes arbitrage checks and numerical safeguards.
+
+    Returns
+    -------
+    float
+        Implied volatility or NaN if inversion fails.
+    """
     option_type = option_type.lower()
     if S <= 0 or K <= 0 or T <= 0:
         return np.nan
@@ -95,9 +147,14 @@ def implied_volatility_bs(S, K, T, r, q, market_price, option_type,
 
 
 # ============================================================
-# Yahoo fetch + mid price
+# Yahoo Finance option chain fetch and mid-price computation
 # ============================================================
+
 def _mid_price_from_row(row) -> float:
+    """
+    Compute the mid price from bid/ask quotes.
+    Falls back to last traded price if bid/ask are unavailable.
+    """
     bid = row.get("bid", np.nan)
     ask = row.get("ask", np.nan)
     last = row.get("lastPrice", np.nan)
@@ -110,12 +167,34 @@ def _mid_price_from_row(row) -> float:
 
 
 def get_all_option_maturities(ticker: str):
+    """
+    Retrieve all available option maturities from Yahoo Finance.
+    """
     stock = yf.Ticker(ticker)
     maturities = getattr(stock, "options", None)
     return maturities if maturities else []
 
 
 def get_market_prices_yahoo(ticker: str, T_days: int = None):
+    """
+    Fetch option mid prices from Yahoo Finance for a selected maturity.
+
+    Parameters
+    ----------
+    ticker : str
+        Underlying ticker.
+    T_days : int, optional
+        Target maturity in days.
+
+    Returns
+    -------
+    calls : dict
+        Call option prices indexed by strike.
+    puts : dict
+        Put option prices indexed by strike.
+    maturity : str
+        Selected maturity date.
+    """
     stock = yf.Ticker(ticker)
     dates = getattr(stock, "options", None)
     if not dates:
@@ -146,9 +225,15 @@ def get_market_prices_yahoo(ticker: str, T_days: int = None):
 
 
 # ============================================================
-# Build implied vol curve from market (BS inversion)
+# Implied volatility curve construction and cleaning
 # ============================================================
+
 def generate_vol_curve(S, maturity_date, r, q, market_calls, market_puts, option_type):
+    """
+    Build an implied volatility curve by inverting Black-Scholes prices.
+
+    Uses call-put parity blending to reduce microstructure noise.
+    """
     option_type = option_type.lower()
     T = (pd.to_datetime(maturity_date) - pd.Timestamp.today()).days / 365.0
     if T <= 0:
@@ -160,7 +245,6 @@ def generate_vol_curve(S, maturity_date, r, q, market_calls, market_puts, option
     strikes = sorted(set(market_calls.keys()).union(set(market_puts.keys())))
     prices_for_type = {}
 
-    # parity blend to reduce noise when both call&put exist
     for K in strikes:
         c = market_calls.get(K, None)
         p = market_puts.get(K, None)
@@ -194,6 +278,10 @@ def generate_vol_curve(S, maturity_date, r, q, market_calls, market_puts, option
 
 def clean_iv_points(S, strikes, vols, T, r, q,
                     vega_min=1e-4, iv_min=0.01, iv_max=3.0):
+    """
+    Filter implied volatility points using admissible IV bounds
+    and minimum vega thresholds.
+    """
     strikes = np.asarray(strikes, dtype=float)
     vols = np.asarray(vols, dtype=float)
 
@@ -215,6 +303,10 @@ def clean_iv_points(S, strikes, vols, T, r, q,
 
 
 def smooth_smile_in_strike(S, strikes, vols, T, r, q, num_points=140, smoothing_factor=0.8):
+    """
+    Smooth the implied volatility smile in strike space
+    using a vega-weighted cubic spline.
+    """
     strikes = np.asarray(strikes, dtype=float)
     vols = np.asarray(vols, dtype=float)
     if strikes.size < 5:
@@ -229,38 +321,46 @@ def smooth_smile_in_strike(S, strikes, vols, T, r, q, num_points=140, smoothing_
     return K_grid, iv_grid
 
 
-def plot_vol_curve(S, strikes, vols, maturity=None, K=None, T=None, r=None, q=None, title="Implied Volatility Curve"):
+def plot_vol_curve(S, strikes, vols, maturity=None, K=None, T=None, r=None, q=None,
+                   title="Implied Volatility Curve"):
+    """
+    Plot implied volatility smile and optional spline smoothing.
+    """
     strikes = np.asarray(strikes, dtype=float)
     vols = np.asarray(vols, dtype=float)
 
     fig, ax = plt.subplots(figsize=(12, 6))
     fig.patch.set_facecolor("#0e1117")
     ax.set_facecolor("#0e1117")
-    ax.scatter(strikes, vols, marker="x", s=70, color='orange', label="IV points")
+    ax.scatter(strikes, vols, marker="x", s=70, color="orange", label="IV points")
 
     if T is not None and r is not None and q is not None and strikes.size >= 5:
         K_s, iv_s = smooth_smile_in_strike(S, strikes, vols, T, r, q)
-        ax.plot(K_s, iv_s, lw=2,color ='orange' ,label="Vega-weighted spline")
+        ax.plot(K_s, iv_s, lw=2, color="orange", label="Vega-weighted spline")
 
         if K is not None:
             iv_at_K = np.interp(float(K), K_s, iv_s)
-            ax.axvline(float(K), linestyle="--",color='orange', lw=1.5, alpha=0.8)
-            ax.scatter([float(K)], [iv_at_K], s=80, zorder=5,color = 'orange', label=f"IV@K≈{iv_at_K:.4f}")
+            ax.axvline(float(K), linestyle="--", color="orange", lw=1.5, alpha=0.8)
+            ax.scatter([float(K)], [iv_at_K], s=80, zorder=5,
+                       color="orange", label=f"IV@K≈{iv_at_K:.4f}")
 
     full_title = title
     if maturity is not None:
         full_title += f" — maturity: {maturity}"
-    ax.set_title(full_title,color='white')
-    ax.set_xlabel("Strike K",color='white')
-    ax.set_ylabel("Implied Volatility",color='white')
+
+    ax.set_title(full_title, color="white")
+    ax.set_xlabel("Strike K", color="white")
+    ax.set_ylabel("Implied Volatility", color="white")
     ax.grid(True, linestyle="--", alpha=0.3)
     ax.legend()
     return fig
 
-def plot_iv_surface_KT(vol_curves, grid_K=70, grid_T=45, rbf_smooth=0.2, title="Implied Volatility Surface"):
+
+def plot_iv_surface_KT(vol_curves, grid_K=70, grid_T=45, rbf_smooth=0.2,
+                       title="Implied Volatility Surface"):
     """
-    vol_curves[maturity] = {"strikes":[...], "vols":[...], "T": float}
-    Builds a smooth surface in axes (K, T) directly.
+    Build and plot a smooth implied volatility surface
+    directly in (K, T) coordinates using RBF interpolation.
     """
     Ks, Ts, IVs = [], [], []
 
@@ -309,7 +409,8 @@ def plot_iv_surface_KT(vol_curves, grid_K=70, grid_T=45, rbf_smooth=0.2, title="
 
 def generate_heston_iv_curve(S, r, q, option_type, strikes, T, heston_params, HestonModel):
     """
-    Returns model IV at given T for the provided strikes.
+    Compute implied volatilities from a Heston model
+    for a given maturity and set of strikes.
     """
     vols_model = []
     for K in strikes:
@@ -322,7 +423,7 @@ def generate_heston_iv_curve(S, r, q, option_type, strikes, T, heston_params, He
                 **heston_params
             )
             p = m.price()
-            iv = m.implied_volatility(p) 
+            iv = m.implied_volatility(p)
             if not (np.isfinite(iv) and 0.01 <= iv <= 3.0):
                 iv = np.nan
         except Exception:
@@ -333,6 +434,10 @@ def generate_heston_iv_curve(S, r, q, option_type, strikes, T, heston_params, He
 
 
 def build_vol_error_surface(market_surface, model_surface):
+    """
+    Compute the implied volatility error surface
+    between a market surface and a model surface.
+    """
     error_surface = {}
     for maturity, mkt in market_surface.items():
         if maturity not in model_surface:
@@ -348,7 +453,13 @@ def build_vol_error_surface(market_surface, model_surface):
             mask_mod = np.isfinite(iv_mod)
             if np.sum(mask_mod) < 2:
                 continue
-            iv_mod = np.interp(K_mkt, K_mod[mask_mod], iv_mod[mask_mod], left=np.nan, right=np.nan)
+            iv_mod = np.interp(
+                K_mkt,
+                K_mod[mask_mod],
+                iv_mod[mask_mod],
+                left=np.nan,
+                right=np.nan
+            )
 
         mask = np.isfinite(iv_mkt) & np.isfinite(iv_mod)
         if np.sum(mask) < 4:
@@ -362,13 +473,20 @@ def build_vol_error_surface(market_surface, model_surface):
     return error_surface
 
 
-def select_calibration_points(market_surface, S, max_maturities=3, strikes_per_mat=10, moneyness_band=(0.8, 1.2)):
+def select_calibration_points(market_surface, S, max_maturities=3,
+                              strikes_per_mat=10, moneyness_band=(0.8, 1.2)):
     """
-    Pick a small, informative subset:
-    - up to max_maturities maturities (closest to 1M, 3M, 6M if possible by sorting)
-    - strikes around ATM (moneyness band)
-    - cap strikes_per_mat
-    Returns K_list, T_list, P_list
+    Select a reduced and informative set of calibration points.
+
+    Strategy:
+    - Limit the number of maturities
+    - Focus on near-ATM strikes
+    - Cap the number of strikes per maturity
+
+    Returns
+    -------
+    list, list, list
+        Lists of strikes, maturities, and option prices.
     """
     items = sorted(market_surface.items(), key=lambda kv: float(kv[1]["T"]))
     if len(items) == 0:
@@ -378,9 +496,9 @@ def select_calibration_points(market_surface, S, max_maturities=3, strikes_per_m
     if max_maturities >= 1:
         idx.append(0)
     if max_maturities >= 2 and len(items) > 1:
-        idx.append(len(items)//2)
+        idx.append(len(items) // 2)
     if max_maturities >= 3 and len(items) > 2:
-        idx.append(len(items)-1)
+        idx.append(len(items) - 1)
     idx = sorted(set(idx))[:max_maturities]
 
     K_list, T_list, P_list = [], [], []
@@ -392,7 +510,6 @@ def select_calibration_points(market_surface, S, max_maturities=3, strikes_per_m
 
         lo, hi = moneyness_band
         mask = (strikes >= lo * S) & (strikes <= hi * S)
-
         strikes_band = strikes[mask] if np.any(mask) else strikes
 
         order = np.argsort(np.abs(strikes_band - S))
